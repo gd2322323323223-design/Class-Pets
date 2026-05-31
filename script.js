@@ -151,6 +151,7 @@
   let activeScoreMenuSlotId = null;
   let activeGroupScoreMenuId = null;
   let animalPickSlotId = null;
+  let activeGroupMembersModalId = null;
 
   let webAudioCtx = null;
   let luckyDrawRunning = false;
@@ -2866,6 +2867,17 @@
     const btnAdd = document.getElementById("btn-group-add");
     if (btnAdd) btnAdd.addEventListener("click", onAddGroup);
 
+    const membersModal = document.getElementById("group-members-modal");
+    const membersClose = document.getElementById("btn-group-members-close");
+    if (membersClose) {
+      membersClose.addEventListener("click", closeGroupMembersModal);
+    }
+    if (membersModal) {
+      membersModal.addEventListener("click", function (ev) {
+        if (ev.target === membersModal) closeGroupMembersModal();
+      });
+    }
+
     groupPanelInitialized = true;
   }
 
@@ -2893,37 +2905,145 @@
       btn.className = "group-btn";
       btn.textContent = g.name + (count ? " (" + count + ")" : "");
       btn.title = count
-        ? "為「" + g.name + "」" + count + " 位成員加分"
-        : "此組尚無成員";
+        ? "查看「" + g.name + "」成員名單（" + count + " 人）"
+        : "查看「" + g.name + "」成員名單";
       if (!count) btn.classList.add("is-empty");
       btn.addEventListener("click", function (ev) {
         ev.stopPropagation();
-        onGroupButtonClick(g.id);
+        openGroupMembersModal(g.id);
       });
-
-      const quickMenu = document.createElement("div");
-      quickMenu.className = "group-score-quick-menu";
-      quickMenu.setAttribute("role", "menu");
-      QUICK_ADD_VALUES.forEach(function (delta) {
-        const qb = document.createElement("button");
-        qb.type = "button";
-        qb.className = "group-score-quick-btn";
-        qb.textContent = "+" + delta;
-        qb.setAttribute("role", "menuitem");
-        qb.addEventListener("click", function (ev) {
-          ev.stopPropagation();
-          applyGroupQuickScore(g.id, delta);
-        });
-        quickMenu.appendChild(qb);
-      });
-      const menuOpen = activeGroupScoreMenuId === g.id && !teacherMode;
-      quickMenu.classList.toggle("is-open", menuOpen);
-      quickMenu.setAttribute("aria-hidden", menuOpen ? "false" : "true");
 
       wrapItem.appendChild(btn);
-      wrapItem.appendChild(quickMenu);
       wrap.appendChild(wrapItem);
     });
+  }
+
+  function openGroupMembersModal(groupId) {
+    const group = getGroupById(groupId);
+    if (!group) return;
+    closeQuickScoreMenu();
+    closeGroupQuickScoreMenu();
+    activeGroupMembersModalId = groupId;
+    renderGroupMembersModal(groupId);
+    const modal = document.getElementById("group-members-modal");
+    if (modal) modal.hidden = false;
+    document.body.classList.add("group-members-open");
+  }
+
+  function closeGroupMembersModal() {
+    activeGroupMembersModalId = null;
+    const modal = document.getElementById("group-members-modal");
+    if (modal) modal.hidden = true;
+    document.body.classList.remove("group-members-open");
+  }
+
+  function renderGroupMembersModal(groupId) {
+    const group = getGroupById(groupId);
+    if (!group) return;
+
+    const titleEl = document.getElementById("group-members-title");
+    const countEl = document.getElementById("group-members-count");
+    const listEl = document.getElementById("group-members-list");
+    const emptyEl = document.getElementById("group-members-empty");
+    const scoreRow = document.getElementById("group-members-score-row");
+    const scoreBtns = document.getElementById("group-members-score-btns");
+
+    if (titleEl) titleEl.textContent = "「" + group.name + "」成員名單";
+    if (countEl) {
+      countEl.textContent =
+        group.memberIds.length > 0
+          ? "共 " + group.memberIds.length + " 位成員"
+          : "目前沒有成員";
+    }
+
+    if (listEl) {
+      listEl.innerHTML = "";
+      group.memberIds.forEach(function (slotId) {
+        const slot = getSlotById(slotId);
+        if (!slot) return;
+        const li = document.createElement("li");
+        li.className = "group-members-item";
+        li.innerHTML =
+          '<div class="group-members-item__info">' +
+          slotDisplayLabel(slot) +
+          '<span class="group-members-item__score">目前 ' +
+          slot.score +
+          " 分</span></div>";
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "group-members-item__remove";
+        removeBtn.textContent = "移出組別";
+        removeBtn.addEventListener("click", function () {
+          removeMemberFromGroup(groupId, slotId);
+        });
+        li.appendChild(removeBtn);
+        listEl.appendChild(li);
+      });
+    }
+
+    if (emptyEl) emptyEl.hidden = group.memberIds.length > 0;
+    if (scoreRow) scoreRow.hidden = group.memberIds.length === 0;
+
+    if (scoreBtns && group.memberIds.length > 0) {
+      scoreBtns.innerHTML = "";
+      QUICK_ADD_VALUES.forEach(function (delta) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "group-members-modal__score-btn";
+        btn.textContent = "+" + delta;
+        btn.addEventListener("click", function () {
+          applyGroupQuickScore(groupId, delta);
+          closeGroupMembersModal();
+        });
+        scoreBtns.appendChild(btn);
+      });
+      if (teacherMode) {
+        const customBtn = document.createElement("button");
+        customBtn.type = "button";
+        customBtn.className = "group-members-modal__score-btn";
+        customBtn.textContent = "自訂";
+        customBtn.addEventListener("click", function () {
+          const raw = prompt(
+            "要為「" + group.name + "」全組加幾分？（可輸入正負整數，0 取消）",
+            "1"
+          );
+          if (raw === null) return;
+          const d = parseInt(raw, 10);
+          if (!Number.isFinite(d) || d === 0) {
+            if (raw !== "0") alert("請輸入非 0 的整數。");
+            return;
+          }
+          applyGroupScoreDelta(group, d);
+          closeGroupMembersModal();
+        });
+        scoreBtns.appendChild(customBtn);
+      }
+    }
+  }
+
+  function removeMemberFromGroup(groupId, slotId) {
+    if (!teacherMode) {
+      ensureTeacherModeOn();
+      return;
+    }
+    const group = getGroupById(groupId);
+    const slot = getSlotById(slotId);
+    if (!group || !slot) return;
+    if (
+      !confirm(
+        "確定將「" + slotDisplayLabel(slot) + "」移出「" + group.name + "」？"
+      )
+    ) {
+      return;
+    }
+    group.memberIds = group.memberIds.filter(function (id) {
+      return id !== slotId;
+    });
+    saveGroups();
+    renderGroupButtons();
+    if (activeGroupMembersModalId === groupId) {
+      renderGroupMembersModal(groupId);
+    }
   }
 
   function openGroupManageModal() {
@@ -3106,41 +3226,7 @@
   }
 
   function onGroupButtonClick(groupId) {
-    const group = getGroupById(groupId);
-    if (!group) return;
-    if (!group.memberIds.length) {
-      alert(
-        "「" +
-          group.name +
-          "」目前沒有成員，請先在教師模式下指定學生加入組別。"
-      );
-      return;
-    }
-
-    if (teacherMode) {
-      closeGroupQuickScoreMenu();
-      closeQuickScoreMenu();
-      const raw = prompt(
-        "要為「" + group.name + "」全組加幾分？（可輸入正負整數，0 取消）",
-        "1"
-      );
-      if (raw === null) return;
-      const delta = parseInt(raw, 10);
-      if (!Number.isFinite(delta) || delta === 0) {
-        if (raw !== "0") alert("請輸入非 0 的整數。");
-        return;
-      }
-      applyGroupScoreDelta(group, delta);
-      return;
-    }
-
-    closeQuickScoreMenu();
-    if (activeGroupScoreMenuId === groupId) {
-      activeGroupScoreMenuId = null;
-    } else {
-      activeGroupScoreMenuId = groupId;
-    }
-    renderGroupButtons();
+    openGroupMembersModal(groupId);
   }
 
   function applyGroupQuickScore(groupId, delta) {

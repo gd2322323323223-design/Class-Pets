@@ -2128,8 +2128,8 @@ body.teacher-mode-active .slot {
 
 .group-btn:disabled,
 .group-btn.is-empty {
-  opacity: 0.45;
-  cursor: not-allowed;
+  opacity: 0.75;
+  cursor: pointer;
 }
 
 .group-score-quick-menu {
@@ -2476,6 +2476,181 @@ body.teacher-mode-active .slot {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.group-members-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 340;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(30, 20, 10, 0.45);
+  backdrop-filter: blur(6px);
+}
+
+.group-members-modal[hidden] {
+  display: none;
+}
+
+.group-members-modal__card {
+  width: min(92vw, 420px);
+  max-height: min(85vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 1.15rem 1.1rem 1rem;
+  border-radius: 16px;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 253, 231, 0.98) 0%,
+    rgba(255, 236, 179, 0.97) 100%
+  );
+  border: 2px solid rgba(180, 83, 9, 0.4);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.group-members-modal__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.12rem;
+  font-weight: 900;
+  color: #78350f;
+  text-align: center;
+}
+
+.group-members-modal__count {
+  margin: 0 0 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: rgba(120, 53, 15, 0.75);
+  text-align: center;
+}
+
+.group-members-list {
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: min(42vh, 320px);
+}
+
+.group-members-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(180, 83, 9, 0.28);
+}
+
+.group-members-item__info {
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #422006;
+  line-height: 1.35;
+}
+
+.group-members-item__score {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(120, 53, 15, 0.7);
+}
+
+.group-members-item__remove {
+  flex-shrink: 0;
+  padding: 0.28rem 0.5rem;
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #991b1b;
+  cursor: pointer;
+  background: linear-gradient(180deg, #fecaca 0%, #fca5a5 100%);
+}
+
+.group-members-item__remove:hover {
+  filter: brightness(1.04);
+}
+
+body:not(.teacher-mode-active) .group-members-item__remove {
+  display: none;
+}
+
+.group-members-modal__empty {
+  margin: 0 0 0.65rem;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #92400e;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.55);
+  border-radius: 10px;
+  border: 1px dashed rgba(180, 83, 9, 0.35);
+}
+
+.group-members-modal__empty[hidden] {
+  display: none;
+}
+
+.group-members-modal__score-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+  padding-top: 0.15rem;
+  border-top: 1px dashed rgba(180, 83, 9, 0.28);
+}
+
+.group-members-modal__score-row[hidden] {
+  display: none;
+}
+
+.group-members-modal__score-label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #78350f;
+  text-align: center;
+}
+
+.group-members-modal__score-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: center;
+}
+
+.group-members-modal__score-btn {
+  min-width: 2.4rem;
+  padding: 0.32rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid rgba(180, 83, 9, 0.4);
+  font-family: inherit;
+  font-size: 0.76rem;
+  font-weight: 900;
+  color: #78350f;
+  cursor: pointer;
+  background: linear-gradient(180deg, #fef9c3 0%, #fde047 100%);
+}
+
+.group-members-modal__score-btn:hover {
+  filter: brightness(1.05);
+}
+
+.group-members-modal__close {
+  width: 100%;
+  color: #422006;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(120, 53, 15, 0.28);
 }
 
 /* 6 x 4 網格，容納 22 個插槽 */

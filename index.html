@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>欣賞園地</title>
-  <link rel="stylesheet" href="style.css?v=63" />
+  <link rel="stylesheet" href="style.css?v=64" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v63</div>
+  <div class="build-version-badge" aria-label="版本號">v64</div>
 
   <div
     id="class-code-modal"
@@ -346,12 +346,41 @@
   >
     <div class="group-manage-modal__card">
       <h2 id="group-manage-title" class="group-manage-modal__title">管理組別</h2>
-      <p class="group-manage-modal__hint">最多 10 組。點選組別可為該組加分。</p>
+      <p class="group-manage-modal__hint">最多 10 組。點選組別可查看成員並加分。</p>
       <ul id="group-manage-list" class="group-manage-list"></ul>
       <div class="group-manage-modal__actions">
         <button type="button" id="btn-group-add" class="tools-btn tools-btn--primary">＋ 新增組別</button>
         <button type="button" id="btn-group-manage-close" class="tools-btn tools-btn--ghost">關閉</button>
       </div>
+    </div>
+  </div>
+
+  <div
+    id="group-members-modal"
+    class="group-members-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="group-members-title"
+  >
+    <div class="group-members-modal__card">
+      <h2 id="group-members-title" class="group-members-modal__title">組別成員</h2>
+      <p id="group-members-count" class="group-members-modal__count"></p>
+      <ul id="group-members-list" class="group-members-list"></ul>
+      <p id="group-members-empty" class="group-members-modal__empty" hidden>
+        此組尚無成員，請在教師模式下點選學生並選「加入組別」。
+      </p>
+      <div id="group-members-score-row" class="group-members-modal__score-row" hidden>
+        <span class="group-members-modal__score-label">全組加分</span>
+        <div id="group-members-score-btns" class="group-members-modal__score-btns"></div>
+      </div>
+      <button
+        type="button"
+        id="btn-group-members-close"
+        class="tools-btn tools-btn--ghost group-members-modal__close"
+      >
+        關閉
+      </button>
     </div>
   </div>
 
@@ -758,6 +787,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=63"></script>
+  <script src="script.js?v=64"></script>
 </body>
 </html>
