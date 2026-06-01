@@ -1731,6 +1731,9 @@ body.teacher-mode-active .slot {
   padding: 1.5rem;
   background: rgba(61, 26, 90, 0.55);
   backdrop-filter: blur(10px);
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .class-progress-celebration-modal[hidden] {
@@ -1742,6 +1745,9 @@ body.teacher-mode-active .slot {
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
 .class-progress-celebration-fx__piece {
@@ -2602,6 +2608,14 @@ body.teacher-mode-active .slot {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
+}
+
+.group-manage-modal__actions .tools-btn--ghost,
+.group-builder-modal__actions .tools-btn--ghost {
+  color: #042f2e;
+  background: linear-gradient(135deg, #5eead4 0%, #2dd4bf 100%);
+  border: none;
+  box-shadow: 0 6px 18px rgba(45, 212, 191, 0.32);
 }
 
 .group-builder-modal {

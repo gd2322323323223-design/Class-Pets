@@ -328,15 +328,15 @@
       "class-progress-celebration-message"
     );
     if (titleEl) {
-      titleEl.textContent = "🐉 恭喜全班！Lv." + level + " 達成！";
+      titleEl.textContent = "🎉全班總得分突破" + threshold + "分！🎉";
     }
     if (messageEl) {
       messageEl.innerHTML =
-        "全班總得分突破 " +
-        threshold +
-        " 分！<br />成功晉升 <strong>【守護神獸 Lv." +
+        "恭喜全班晉升到LV." +
         level +
-        "】</strong>！";
+        "！<br />加油！向LV." +
+        (level + 1) +
+        "進發！";
     }
     modal.hidden = false;
     document.body.classList.add("class-progress-celebration-open");
