@@ -1103,6 +1103,115 @@
     }
   }
 
+  const SCORE_FX_STAR_HUES = [45, 120, 195, 270, 330, 15];
+
+  function getSlotScoreFxLevel(score) {
+    if (score >= 500) return 5;
+    if (score >= 350) return 4;
+    if (score >= 250) return 3;
+    if (score >= 150) return 2;
+    if (score >= 50) return 1;
+    return 0;
+  }
+
+  function renderSlotRipples(stage, slot, score) {
+    if (!stage) return;
+    let ripplesEl = stage.querySelector(".slot__fx-ripples");
+    if (score < 150) {
+      if (ripplesEl) ripplesEl.hidden = true;
+      return;
+    }
+    if (!ripplesEl) {
+      ripplesEl = document.createElement("div");
+      ripplesEl.className = "slot__fx-ripples";
+      ripplesEl.setAttribute("aria-hidden", "true");
+      stage.insertBefore(ripplesEl, stage.firstChild);
+      for (let i = 1; i <= 3; i++) {
+        const ring = document.createElement("span");
+        ring.className = "slot__fx-ripple slot__fx-ripple--" + i;
+        ripplesEl.appendChild(ring);
+      }
+    }
+    ripplesEl.hidden = false;
+    ripplesEl.style.setProperty("--ripple-hue", String(beamHueForSlot(slot, 1)));
+  }
+
+  function renderSlotStars(el, slot, score) {
+    let starsEl = el.querySelector(".slot__fx-stars");
+    if (score < 350) {
+      if (starsEl) starsEl.hidden = true;
+      return;
+    }
+    if (!starsEl) {
+      starsEl = document.createElement("div");
+      starsEl.className = "slot__fx-stars";
+      starsEl.setAttribute("aria-hidden", "true");
+      const stage = el.querySelector(".slot__stage");
+      if (stage) el.insertBefore(starsEl, stage);
+      else el.appendChild(starsEl);
+      for (let i = 1; i <= 6; i++) {
+        const star = document.createElement("span");
+        star.className = "slot__fx-star slot__fx-star--" + i;
+        star.textContent = "★";
+        starsEl.appendChild(star);
+      }
+    }
+    starsEl.hidden = false;
+    starsEl.querySelectorAll(".slot__fx-star").forEach(function (star, i) {
+      const hue = (SCORE_FX_STAR_HUES[i] + slot.id * 17) % 360;
+      star.style.setProperty("--star-hue", String(hue));
+    });
+  }
+
+  function renderSlotCrown(el, score) {
+    let crownEl = el.querySelector(".slot__fx-crown");
+    if (score < 500) {
+      if (crownEl) crownEl.hidden = true;
+      return;
+    }
+    if (!crownEl) {
+      crownEl = document.createElement("div");
+      crownEl.className = "slot__fx-crown";
+      crownEl.setAttribute("aria-hidden", "true");
+      crownEl.innerHTML =
+        '<span class="slot__fx-crown-icon" role="img" aria-hidden="true">👑</span>';
+      const stage = el.querySelector(".slot__stage");
+      if (stage) el.insertBefore(crownEl, stage);
+      else el.appendChild(crownEl);
+    }
+    crownEl.hidden = false;
+  }
+
+  function renderSlotScoreFx(el, slot) {
+    if (!el || !slot) return;
+    const score = slot.hatched ? Math.max(0, slot.score) : 0;
+    const fxLevel = getSlotScoreFxLevel(score);
+
+    el.classList.toggle("slot--fx-glow", fxLevel >= 1);
+    el.classList.toggle("slot--fx-ripple", fxLevel >= 2);
+    el.classList.toggle("slot--fx-border", fxLevel >= 3);
+    el.classList.toggle("slot--fx-stars", fxLevel >= 4);
+    el.classList.toggle("slot--fx-crown", fxLevel >= 5);
+
+    if (fxLevel >= 1) {
+      el.style.setProperty(
+        "--slot-animal-glow-hue",
+        String(beamHueForSlot(slot, 0))
+      );
+    }
+    if (fxLevel >= 3) {
+      el.style.setProperty(
+        "--slot-border-glow-hue",
+        String(beamHueBaseForSlot(slot.id))
+      );
+    }
+
+    const stage = el.querySelector(".slot__stage");
+    renderSlotRipples(stage, slot, score);
+    renderSlotStars(el, slot, score);
+    renderSlotCrown(el, score);
+  }
+
   function animalForSlot(id) {
     return ANIMALS[(id - 1) % ANIMALS.length];
   }
@@ -4561,19 +4670,33 @@
     initDataBackupModule();
   }
 
-  function deductSlotLife(slotId) {
+  function toggleSlotLifeHeart(slotId, heartIndex) {
     const slot = getSlotById(slotId);
-    if (!slot || slot.lives <= 0) return;
+    if (!slot || !Number.isFinite(heartIndex)) return;
 
-    slot.lives = clampLives(slot.lives - 1);
-    updateSlotLifeDisplay(slot);
-    saveSlots();
-    playLifeWarningSound();
+    if (heartIndex < slot.lives) {
+      if (heartIndex !== slot.lives - 1) return;
+      slot.lives = clampLives(slot.lives - 1);
+      updateSlotLifeDisplay(slot);
+      saveSlots();
+      playLifeWarningSound();
+      if (slot.lives === 0) {
+        setSlotReactionEmoji(slotId, EMOJI_SLEEP);
+      } else {
+        setSlotReactionEmoji(slotId, EMOJI_SAD);
+      }
+      return;
+    }
 
-    if (slot.lives === 0) {
-      setSlotReactionEmoji(slotId, EMOJI_SLEEP);
-    } else {
-      setSlotReactionEmoji(slotId, EMOJI_SAD);
+    if (heartIndex === slot.lives && slot.lives < LIVES_MAX) {
+      slot.lives = clampLives(slot.lives + 1);
+      clearSlotEmojiTimer(slotId);
+      if (slot.emoji === EMOJI_SLEEP || slot.emoji === EMOJI_SAD) {
+        slot.emoji = DEFAULT_EMOJI;
+        updateSlotEmojiDisplay(slotId);
+      }
+      updateSlotLifeDisplay(slot);
+      saveSlots();
     }
   }
 
@@ -4593,10 +4716,11 @@
     livesEl.dataset.livesBound = "1";
     livesEl.addEventListener("click", function (ev) {
       const heart = ev.target.closest(".slot__life-heart");
-      if (!heart || !heart.classList.contains("is-full")) return;
+      if (!heart) return;
       ev.stopPropagation();
       ev.preventDefault();
-      deductSlotLife(slotId);
+      const heartIndex = parseInt(heart.dataset.lifeIndex, 10);
+      toggleSlotLifeHeart(slotId, heartIndex);
     });
   }
 
@@ -4634,15 +4758,26 @@
       const isFull = i < slot.lives;
       heart.classList.toggle("is-full", isFull);
       heart.classList.toggle("is-empty", !isFull);
+      heart.classList.toggle("is-deductible", isFull && i === slot.lives - 1);
+      heart.classList.toggle(
+        "is-restoreable",
+        !isFull && i === slot.lives && slot.lives < LIVES_MAX
+      );
       heart.hidden = false;
       heart.style.display = "";
       heart.removeAttribute("disabled");
-      heart.setAttribute(
-        "aria-label",
-        isFull
-          ? "扣減生命值（目前 " + slot.lives + "）"
-          : "已失去的生命值"
-      );
+      if (isFull && i === slot.lives - 1) {
+        heart.setAttribute(
+          "aria-label",
+          "扣減生命值（目前 " + slot.lives + "，再按一次可恢復）"
+        );
+      } else if (!isFull && i === slot.lives && slot.lives < LIVES_MAX) {
+        heart.setAttribute("aria-label", "恢復此愛心（目前 " + slot.lives + "）");
+      } else if (isFull) {
+        heart.setAttribute("aria-label", "已點亮的生命值");
+      } else {
+        heart.setAttribute("aria-label", "已失去的生命值");
+      }
     });
 
     let wakeBtn = livesEl.querySelector(".slot__life-wakeup");
@@ -4686,16 +4821,49 @@
     syncSlotLifeHeartStates(livesEl, slot);
   }
 
+  function slotBeastInteractTarget(stage) {
+    if (!stage) return null;
+    return stage.querySelector(".slot__viewer, .slot__egg, model-viewer");
+  }
+
+  function bindSlotBeastInteractable(stage, slot) {
+    if (!stage || !slot) return;
+
+    stage.removeAttribute("role");
+    stage.removeAttribute("tabindex");
+    stage.removeAttribute("aria-label");
+
+    const target = slotBeastInteractTarget(stage);
+    if (!target) return;
+
+    const name =
+      slot.name && slot.name !== DEFAULT_NAME ? slot.name : slot.id + " 號學生";
+    target.setAttribute("role", "button");
+    target.setAttribute("tabindex", "0");
+    target.setAttribute(
+      "aria-label",
+      slot.hatched
+        ? name + " 的神獸，點擊進入內頁"
+        : name + " 的蛋，點擊命名或孵化"
+    );
+
+    target.onclick = function (ev) {
+      ev.stopPropagation();
+      onSlotBeastClick(slot.id);
+    };
+    target.onkeydown = function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        onSlotBeastClick(slot.id);
+      }
+    };
+  }
+
   function updateSlotStageA11y(el, slot) {
     const stageEl = el.querySelector(".slot__stage");
     if (!stageEl) return;
-    const name =
-      slot.name && slot.name !== DEFAULT_NAME ? slot.name : slot.id + " 號學生";
-    if (slot.hatched) {
-      stageEl.setAttribute("aria-label", name + " 的神獸，點擊進入內頁");
-    } else {
-      stageEl.setAttribute("aria-label", name + " 的蛋，點擊命名或孵化");
-    }
+    bindSlotBeastInteractable(stageEl, slot);
   }
 
   function getSlotStageKey(slot) {
@@ -4709,6 +4877,7 @@
     if (!stage) return;
     const key = getSlotStageKey(slot);
     if (stage.dataset.stageKey === key && stage.firstChild) {
+      bindSlotBeastInteractable(stage, slot);
       return;
     }
     stage.dataset.stageKey = key;
@@ -4721,6 +4890,7 @@
       egg.style.setProperty("--egg-hue", String(eggHueForSlot(slot.id)));
       stage.appendChild(egg);
     }
+    bindSlotBeastInteractable(stage, slot);
   }
 
   function ensureQuickScoreMenu(quickMenu, slotId) {
@@ -4795,6 +4965,7 @@
     applySlotDrawClasses(el, slot.id);
     updateSlotStageA11y(el, slot);
     renderSlotBeams(el.querySelector(".slot__stage"), slot);
+    renderSlotScoreFx(el, slot);
   }
 
   function renderSlotElement(slot) {
@@ -4831,24 +5002,6 @@
         '  <button type="button" class="slot__footer-part slot__footer-part--score" aria-label="得分"></button>' +
         "</div>" +
         '<div class="score-quick-menu"></div>';
-
-      const stageEl = el.querySelector(".slot__stage");
-      if (stageEl && stageEl.dataset.beastBound !== "1") {
-        stageEl.dataset.beastBound = "1";
-        stageEl.setAttribute("role", "button");
-        stageEl.setAttribute("tabindex", "0");
-        stageEl.addEventListener("click", function (ev) {
-          ev.stopPropagation();
-          onSlotBeastClick(slot.id);
-        });
-        stageEl.addEventListener("keydown", function (e) {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            e.stopPropagation();
-            onSlotBeastClick(slot.id);
-          }
-        });
-      }
 
       gridEl.appendChild(el);
     }
@@ -4911,6 +5064,7 @@
     updateSlotBulkClasses(el, slot);
     updateSlotStageA11y(el, slot);
     renderSlotBeams(el.querySelector(".slot__stage"), slot);
+    renderSlotScoreFx(el, slot);
   }
 
   function renderAll() {
