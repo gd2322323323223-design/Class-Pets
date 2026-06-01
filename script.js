@@ -4828,37 +4828,39 @@
     syncSlotLifeHeartStates(livesEl, slot);
   }
 
-  function slotBeastInteractTarget(stage) {
-    if (!stage) return null;
-    return stage.querySelector(".slot__viewer, .slot__egg, model-viewer");
-  }
-
-  function bindSlotBeastInteractable(stage, slot) {
-    if (!stage || !slot) return;
-
+  function clearSlotStageInteractivity(stage) {
+    if (!stage) return;
     stage.removeAttribute("role");
     stage.removeAttribute("tabindex");
     stage.removeAttribute("aria-label");
-
-    const target = slotBeastInteractTarget(stage);
+    const target = stage.querySelector(".slot__viewer, .slot__egg, model-viewer");
     if (!target) return;
+    target.removeAttribute("role");
+    target.removeAttribute("tabindex");
+    target.removeAttribute("aria-label");
+    target.onclick = null;
+    target.onkeydown = null;
+  }
+
+  function bindSlotNumNav(el, slot) {
+    if (!el || !slot) return;
+    const numEl = el.querySelector(".slot__num");
+    if (!numEl) return;
 
     const name =
       slot.name && slot.name !== DEFAULT_NAME ? slot.name : slot.id + " 號學生";
-    target.setAttribute("role", "button");
-    target.setAttribute("tabindex", "0");
-    target.setAttribute(
+    numEl.setAttribute(
       "aria-label",
       slot.hatched
-        ? name + " 的神獸，點擊進入內頁"
-        : name + " 的蛋，點擊命名或孵化"
+        ? slot.id + " 號，點擊進入「" + name + "」的神獸內頁"
+        : slot.id + " 號，點擊命名或孵化"
     );
 
-    target.onclick = function (ev) {
+    numEl.onclick = function (ev) {
       ev.stopPropagation();
       onSlotBeastClick(slot.id);
     };
-    target.onkeydown = function (e) {
+    numEl.onkeydown = function (e) {
       if (e.key === "Enter" || e.key === " ") {
         e.preventDefault();
         e.stopPropagation();
@@ -4867,10 +4869,9 @@
     };
   }
 
-  function updateSlotStageA11y(el, slot) {
-    const stageEl = el.querySelector(".slot__stage");
-    if (!stageEl) return;
-    bindSlotBeastInteractable(stageEl, slot);
+  function updateSlotNavInteractable(el, slot) {
+    clearSlotStageInteractivity(el.querySelector(".slot__stage"));
+    bindSlotNumNav(el, slot);
   }
 
   function getSlotStageKey(slot) {
@@ -4884,7 +4885,7 @@
     if (!stage) return;
     const key = getSlotStageKey(slot);
     if (stage.dataset.stageKey === key && stage.firstChild) {
-      bindSlotBeastInteractable(stage, slot);
+      clearSlotStageInteractivity(stage);
       return;
     }
     stage.dataset.stageKey = key;
@@ -4897,7 +4898,7 @@
       egg.style.setProperty("--egg-hue", String(eggHueForSlot(slot.id)));
       stage.appendChild(egg);
     }
-    bindSlotBeastInteractable(stage, slot);
+    clearSlotStageInteractivity(stage);
   }
 
   function ensureQuickScoreMenu(quickMenu, slotId) {
@@ -4970,7 +4971,7 @@
     updateSlotQuickMenu(el, slot);
     updateSlotBulkClasses(el, slot);
     applySlotDrawClasses(el, slot.id);
-    updateSlotStageA11y(el, slot);
+    updateSlotNavInteractable(el, slot);
     renderSlotScoreFx(el, slot);
   }
 
@@ -4983,6 +4984,7 @@
 
       el.addEventListener("click", function (ev) {
         if (ev.target.closest(".slot__stage")) return;
+        if (ev.target.closest(".slot__num")) return;
         if (
           ev.target.closest(".slot__footer") ||
           ev.target.closest(".slot__teacher-tools") ||
@@ -4995,7 +4997,7 @@
       });
 
       el.innerHTML =
-        '<span class="slot__num"></span>' +
+        '<button type="button" class="slot__num"></button>' +
         '<div class="slot__teacher-tools">' +
         '  <button type="button" class="slot__teacher-btn slot__teacher-btn--hatch" title="強制孵化" aria-label="強制孵化">⚡</button>' +
         '  <button type="button" class="slot__teacher-btn slot__teacher-btn--egg" title="變回蛋" aria-label="變回蛋">🥚</button>' +
@@ -5068,7 +5070,7 @@
 
     applySlotDrawClasses(el, slot.id);
     updateSlotBulkClasses(el, slot);
-    updateSlotStageA11y(el, slot);
+    updateSlotNavInteractable(el, slot);
     renderSlotScoreFx(el, slot);
   }
 

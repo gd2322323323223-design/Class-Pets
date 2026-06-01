@@ -2776,7 +2776,7 @@ body.bulk-pick-active .slot {
 .slot__viewer,
 .slot__egg,
 .slot__stage model-viewer {
-  cursor: pointer;
+  cursor: default;
 }
 
 .slot__num {
@@ -2786,20 +2786,40 @@ body.bulk-pick-active .slot {
   z-index: 4;
   min-width: 1.75rem;
   padding: 0.15rem 0.45rem;
+  border: none;
   border-radius: 8px;
+  font-family: inherit;
   font-size: 0.8rem;
   font-weight: 800;
   color: var(--bg-deep);
   background: var(--accent);
   text-align: center;
   line-height: 1.3;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.slot__num:hover {
+  filter: brightness(1.08);
+}
+
+.slot__num:active {
+  transform: scale(0.96);
+}
+
+.slot__num:focus {
+  outline: 2px solid rgba(94, 234, 212, 0.75);
+  outline-offset: 2px;
+}
+
+.slot__num:focus:not(:focus-visible) {
+  outline: none;
 }
 
 .slot__viewer:focus,
 .slot__egg:focus,
 .slot__stage model-viewer:focus {
-  outline: 2px solid rgba(94, 234, 212, 0.75);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .slot__viewer:focus:not(:focus-visible),
@@ -3147,7 +3167,7 @@ body.bulk-pick-active .slot {
 
 .slot__fx-crown {
   position: absolute;
-  top: -0.15rem;
+  top: 0.45rem;
   left: 50%;
   z-index: 11;
   display: flex;
@@ -3282,7 +3302,7 @@ body.teacher-mode-active .slot__teacher-tools {
   height: 120px;
   --poster-color: transparent;
   background: transparent;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .slot__lives {
