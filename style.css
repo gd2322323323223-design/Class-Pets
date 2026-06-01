@@ -2731,8 +2731,15 @@ body:not(.teacher-mode-active) .group-members-item__remove {
   min-height: 168px;
   border-radius: var(--radius);
   border: 2px solid rgba(255, 255, 255, 0.4);
-  background-color: rgba(255, 255, 255, 0.32);
-  background-image: var(--slot-gradient);
+  background-color: rgba(255, 255, 255, 0.42);
+  background-image:
+    linear-gradient(
+      160deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.2) 100%
+    ),
+    var(--slot-gradient);
+  background-blend-mode: normal, normal;
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
@@ -2978,9 +2985,9 @@ body.bulk-pick-active .slot {
 
 .slot--fx-glow .slot__viewer {
   filter:
-    drop-shadow(0 0 6px hsla(var(--slot-animal-glow-hue, 45), 100%, 72%, 0.95))
-    drop-shadow(0 0 16px hsla(var(--slot-animal-glow-hue, 45), 95%, 58%, 0.72))
-    drop-shadow(0 0 28px hsla(var(--slot-animal-glow-hue, 45), 90%, 52%, 0.45));
+    drop-shadow(0 0 6px hsla(45, 100%, 72%, 0.95))
+    drop-shadow(0 0 16px hsla(45, 95%, 58%, 0.72))
+    drop-shadow(0 0 28px hsla(45, 90%, 52%, 0.45));
   animation: slotAnimalGlowPulse 2.4s ease-in-out infinite;
 }
 
@@ -2988,15 +2995,15 @@ body.bulk-pick-active .slot {
   0%,
   100% {
     filter:
-      drop-shadow(0 0 5px hsla(var(--slot-animal-glow-hue, 45), 100%, 72%, 0.82))
-      drop-shadow(0 0 14px hsla(var(--slot-animal-glow-hue, 45), 95%, 58%, 0.58))
-      drop-shadow(0 0 24px hsla(var(--slot-animal-glow-hue, 45), 90%, 52%, 0.32));
+      drop-shadow(0 0 5px hsla(45, 100%, 72%, 0.82))
+      drop-shadow(0 0 14px hsla(45, 95%, 58%, 0.58))
+      drop-shadow(0 0 24px hsla(45, 90%, 52%, 0.32));
   }
   50% {
     filter:
-      drop-shadow(0 0 10px hsla(var(--slot-animal-glow-hue, 45), 100%, 78%, 1))
-      drop-shadow(0 0 22px hsla(var(--slot-animal-glow-hue, 45), 95%, 62%, 0.88))
-      drop-shadow(0 0 36px hsla(var(--slot-animal-glow-hue, 45), 90%, 55%, 0.55));
+      drop-shadow(0 0 10px hsla(45, 100%, 78%, 1))
+      drop-shadow(0 0 22px hsla(45, 95%, 62%, 0.88))
+      drop-shadow(0 0 36px hsla(45, 90%, 55%, 0.55));
   }
 }
 
@@ -3057,22 +3064,22 @@ body.bulk-pick-active .slot {
 }
 
 .slot--fx-border {
-  border-color: hsla(var(--slot-border-glow-hue, 200), 88%, 68%, 0.92);
+  border-color: hsla(45, 88%, 68%, 0.92);
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.18),
-    0 0 14px hsla(var(--slot-border-glow-hue, 200), 100%, 58%, 0.72),
-    0 0 32px hsla(var(--slot-border-glow-hue, 200), 95%, 52%, 0.42),
-    inset 0 0 16px hsla(var(--slot-border-glow-hue, 200), 90%, 68%, 0.22);
+    0 0 14px hsla(45, 100%, 58%, 0.72),
+    0 0 32px hsla(45, 95%, 52%, 0.42),
+    inset 0 0 16px hsla(45, 90%, 68%, 0.22);
   animation: slotBorderGlowPulse 2.6s ease-in-out infinite;
 }
 
 .slot--fx-border:hover {
-  border-color: hsla(var(--slot-border-glow-hue, 200), 92%, 72%, 0.98);
+  border-color: hsla(45, 92%, 72%, 0.98);
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.35),
-    0 0 18px hsla(var(--slot-border-glow-hue, 200), 100%, 60%, 0.85),
-    0 0 40px hsla(var(--slot-border-glow-hue, 200), 95%, 52%, 0.52),
-    inset 0 0 18px hsla(var(--slot-border-glow-hue, 200), 90%, 68%, 0.28);
+    0 0 18px hsla(45, 100%, 60%, 0.85),
+    0 0 40px hsla(45, 95%, 52%, 0.52),
+    inset 0 0 18px hsla(45, 90%, 68%, 0.28);
 }
 
 @keyframes slotBorderGlowPulse {
@@ -3080,16 +3087,16 @@ body.bulk-pick-active .slot {
   100% {
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.18),
-      0 0 12px hsla(var(--slot-border-glow-hue, 200), 100%, 58%, 0.62),
-      0 0 28px hsla(var(--slot-border-glow-hue, 200), 95%, 52%, 0.35),
-      inset 0 0 14px hsla(var(--slot-border-glow-hue, 200), 90%, 68%, 0.18);
+      0 0 12px hsla(45, 100%, 58%, 0.62),
+      0 0 28px hsla(45, 95%, 52%, 0.35),
+      inset 0 0 14px hsla(45, 90%, 68%, 0.18);
   }
   50% {
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.18),
-      0 0 20px hsla(var(--slot-border-glow-hue, 200), 100%, 62%, 0.88),
-      0 0 42px hsla(var(--slot-border-glow-hue, 200), 95%, 55%, 0.55),
-      inset 0 0 20px hsla(var(--slot-border-glow-hue, 200), 90%, 70%, 0.28);
+      0 0 20px hsla(45, 100%, 62%, 0.88),
+      0 0 42px hsla(45, 95%, 55%, 0.55),
+      inset 0 0 20px hsla(45, 90%, 70%, 0.28);
   }
 }
 
