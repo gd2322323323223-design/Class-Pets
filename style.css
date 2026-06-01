@@ -3147,7 +3147,7 @@ body.bulk-pick-active .slot {
 
 .slot__fx-crown {
   position: absolute;
-  top: 0.15rem;
+  top: -0.15rem;
   left: 50%;
   z-index: 11;
   display: flex;
@@ -3156,8 +3156,8 @@ body.bulk-pick-active .slot {
   transform: translateX(-50%);
   pointer-events: none;
   filter:
-    drop-shadow(0 0 12px rgba(255, 215, 0, 0.92))
-    drop-shadow(0 4px 14px rgba(251, 191, 36, 0.72));
+    drop-shadow(0 0 10px rgba(255, 215, 0, 0.88))
+    drop-shadow(0 3px 10px rgba(251, 191, 36, 0.62));
   animation: slotCrownFloat 2.6s ease-in-out infinite;
 }
 
@@ -3167,9 +3167,9 @@ body.bulk-pick-active .slot {
 
 .slot__fx-crown-icon {
   display: block;
-  font-size: clamp(2.4rem, 7.2vw, 3.1rem);
+  font-size: clamp(1.65rem, 4.8vw, 2.15rem);
   line-height: 1;
-  transform: translateY(-0.06em);
+  transform: translateY(-0.04em);
   filter: saturate(1.45) brightness(1.14);
   animation: slotCrownShine 1.9s ease-in-out infinite;
 }
@@ -4157,15 +4157,21 @@ body.teacher-mode-active
     0 4px 10px rgba(34, 197, 94, 0.3);
 }
 
-.mission-reminder-hud__toggle {
-  position: relative;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
+.mission-reminder-hud__header {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
-  width: 100%;
-  min-height: 2.35rem;
-  padding: 0.2rem 1.75rem 0.2rem 0.15rem;
+  gap: 0.35rem;
+  padding-right: 1.55rem;
+  padding-left: 0.05rem;
+}
+
+.mission-reminder-hud__label-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  align-self: flex-start;
+  padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;
@@ -4175,8 +4181,6 @@ body.teacher-mode-active
 .mission-reminder-hud__label-grid {
   position: relative;
   z-index: 1;
-  grid-column: 1;
-  grid-row: 1;
   display: inline-grid;
   grid-template-columns: repeat(2, 1.05em);
   gap: 0.06rem 0.14rem;
@@ -4197,6 +4201,15 @@ body.teacher-mode-active
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.75),
     0 2px 8px rgba(14, 116, 144, 0.12);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.mission-reminder-hud__label-toggle:hover .mission-reminder-hud__label-grid {
+  filter: brightness(1.04);
+}
+
+.mission-reminder-hud__label-toggle:active .mission-reminder-hud__label-grid {
+  transform: scale(0.98);
 }
 
 .mission-reminder-hud__label-grid span {
@@ -4205,12 +4218,7 @@ body.teacher-mode-active
 }
 
 .mission-reminder-hud__title {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  justify-self: center;
-  align-self: center;
-  z-index: 0;
-  max-width: calc(100% - 4.5rem);
+  width: 100%;
   margin: 0;
   padding: 0 0.25rem;
   font-size: clamp(1.02rem, 2.5vw, 1.18rem);
@@ -4222,10 +4230,6 @@ body.teacher-mode-active
 }
 
 .mission-reminder-hud__chevron {
-  position: relative;
-  z-index: 1;
-  grid-column: 3;
-  grid-row: 1;
   flex-shrink: 0;
   font-size: 0.72rem;
   color: #9a3412;

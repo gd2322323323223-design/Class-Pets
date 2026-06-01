@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>欣賞園地</title>
-  <link rel="stylesheet" href="style.css?v=66" />
+  <link rel="stylesheet" href="style.css?v=67" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -674,19 +674,22 @@
         >
           ✕
         </button>
-        <button
-          type="button"
-          id="btn-mission-reminder-toggle"
-          class="mission-reminder-hud__toggle"
-          aria-expanded="false"
-          aria-controls="mission-reminder-body"
-        >
-          <span class="mission-reminder-hud__label-grid" aria-label="今日任務">
-            <span>今</span><span>日</span><span>任</span><span>務</span>
-          </span>
-          <span id="mission-reminder-title" class="mission-reminder-hud__title"></span>
-          <span class="mission-reminder-hud__chevron" aria-hidden="true">▼</span>
-        </button>
+        <div class="mission-reminder-hud__header">
+          <button
+            type="button"
+            id="btn-mission-reminder-toggle"
+            class="mission-reminder-hud__label-toggle"
+            aria-expanded="false"
+            aria-controls="mission-reminder-body"
+            aria-label="展開或收合任務說明"
+          >
+            <span class="mission-reminder-hud__label-grid" aria-hidden="true">
+              <span>今</span><span>日</span><span>任</span><span>務</span>
+            </span>
+            <span class="mission-reminder-hud__chevron" aria-hidden="true">▼</span>
+          </button>
+          <p id="mission-reminder-title" class="mission-reminder-hud__title"></p>
+        </div>
         <div id="mission-reminder-body" class="mission-reminder-hud__body" hidden>
           <div id="mission-reminder-desc" class="mission-reminder-hud__desc"></div>
           <div class="mission-reminder-hud__actions">
@@ -787,6 +790,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=66"></script>
+  <script src="script.js?v=67"></script>
 </body>
 </html>

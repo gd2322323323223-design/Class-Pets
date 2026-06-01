@@ -4044,11 +4044,13 @@
   function hideMissionReminder() {
     missionReminderVisible = false;
     currentDailyMission = null;
+    dailyMissionDrawCommitted = false;
     syncMissionHudLayout();
     saveMissionState();
   }
 
   function closeMissionReminderManual() {
+    stopScoreKingMissionSilently();
     hideMissionReminder();
   }
 
@@ -4183,10 +4185,14 @@
     tick();
   }
 
+  function needsMissionRedrawConfirm() {
+    return dailyMissionDrawCommitted;
+  }
+
   function drawDailyMission() {
     if (dailyMissionDrawRunning) return;
 
-    if (dailyMissionDrawCommitted) {
+    if (needsMissionRedrawConfirm()) {
       confirmRedrawDailyMission().then(function (ok) {
         if (!ok) return;
         resetActiveDailyMissionForRedraw();
@@ -4241,6 +4247,7 @@
 
   function onMissionReminderGoalAchieved() {
     if (!missionReminderVisible) return;
+    stopScoreKingMissionSilently();
     grantClassMissionBonus(MISSION_CLASS_BONUS, { withFeedback: true });
     hideMissionReminder();
   }
@@ -4964,7 +4971,6 @@
     updateSlotBulkClasses(el, slot);
     applySlotDrawClasses(el, slot.id);
     updateSlotStageA11y(el, slot);
-    renderSlotBeams(el.querySelector(".slot__stage"), slot);
     renderSlotScoreFx(el, slot);
   }
 
@@ -5063,7 +5069,6 @@
     applySlotDrawClasses(el, slot.id);
     updateSlotBulkClasses(el, slot);
     updateSlotStageA11y(el, slot);
-    renderSlotBeams(el.querySelector(".slot__stage"), slot);
     renderSlotScoreFx(el, slot);
   }
 
