@@ -1117,7 +1117,7 @@
   function renderSlotRipples(stage, slot, score) {
     if (!stage) return;
     let ripplesEl = stage.querySelector(".slot__fx-ripples");
-    if (score < 150) {
+    if (score < 250) {
       if (ripplesEl) ripplesEl.hidden = true;
       return;
     }
@@ -1136,8 +1136,9 @@
     ripplesEl.style.setProperty("--ripple-hue", String(beamHueForSlot(slot, 1)));
   }
 
-  function renderSlotStars(el, slot, score) {
-    let starsEl = el.querySelector(".slot__fx-stars");
+  function renderSlotStars(stage, slot, score) {
+    if (!stage) return;
+    let starsEl = stage.querySelector(".slot__fx-stars");
     if (score < 350) {
       if (starsEl) starsEl.hidden = true;
       return;
@@ -1146,9 +1147,7 @@
       starsEl = document.createElement("div");
       starsEl.className = "slot__fx-stars";
       starsEl.setAttribute("aria-hidden", "true");
-      const stage = el.querySelector(".slot__stage");
-      if (stage) el.insertBefore(starsEl, stage);
-      else el.appendChild(starsEl);
+      stage.appendChild(starsEl);
       for (let i = 1; i <= 6; i++) {
         const star = document.createElement("span");
         star.className = "slot__fx-star slot__fx-star--" + i;
@@ -1188,8 +1187,8 @@
     const fxLevel = getSlotScoreFxLevel(score);
 
     el.classList.toggle("slot--fx-glow", fxLevel >= 1);
-    el.classList.toggle("slot--fx-ripple", fxLevel >= 2);
-    el.classList.toggle("slot--fx-border", fxLevel >= 3);
+    el.classList.toggle("slot--fx-border", fxLevel >= 2);
+    el.classList.toggle("slot--fx-ripple", fxLevel >= 3);
     el.classList.toggle("slot--fx-stars", fxLevel >= 4);
     el.classList.toggle("slot--fx-crown", fxLevel >= 5);
 
@@ -1199,7 +1198,7 @@
         String(beamHueForSlot(slot, 0))
       );
     }
-    if (fxLevel >= 3) {
+    if (fxLevel >= 2) {
       el.style.setProperty(
         "--slot-border-glow-hue",
         String(beamHueBaseForSlot(slot.id))
@@ -1208,7 +1207,7 @@
 
     const stage = el.querySelector(".slot__stage");
     renderSlotRipples(stage, slot, score);
-    renderSlotStars(el, slot, score);
+    renderSlotStars(stage, slot, score);
     renderSlotCrown(el, score);
   }
 
