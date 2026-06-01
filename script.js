@@ -5139,9 +5139,59 @@
     };
   }
 
+  function bindSlotStageAnimalPick(stage, slot) {
+    if (!stage || !slot || !slot.hatched || !teacherMode) return;
+
+    const openPick = function (ev) {
+      ev.stopPropagation();
+      if (!teacherMode) return;
+      closeQuickScoreMenu();
+      openAnimalPickModal(slot.id);
+    };
+
+    stage.setAttribute("role", "button");
+    stage.setAttribute("tabindex", "0");
+    stage.setAttribute(
+      "aria-label",
+      slot.id + " 號，點擊更改動物"
+    );
+    stage.onclick = openPick;
+    stage.onkeydown = function (e) {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        openPick(e);
+      }
+    };
+  }
+
   function updateSlotNavInteractable(el, slot) {
-    clearSlotStageInteractivity(el.querySelector(".slot__stage"));
+    const stage = el.querySelector(".slot__stage");
+    clearSlotStageInteractivity(stage);
     bindSlotNumNav(el, slot);
+    bindSlotStageAnimalPick(stage, slot);
+  }
+
+  function ensureSlotTeacherTools(el, slot) {
+    const tools = el.querySelector(".slot__teacher-tools");
+    if (!tools) return;
+
+    let btn = tools.querySelector(".slot__teacher-btn--egg-toggle");
+    if (!btn) {
+      tools.innerHTML =
+        '<button type="button" class="slot__teacher-btn slot__teacher-btn--egg-toggle">🥚</button>';
+      btn = tools.querySelector(".slot__teacher-btn--egg-toggle");
+    }
+
+    if (!btn) return;
+    btn.textContent = "🥚";
+    btn.title = slot.hatched ? "點擊變回蛋" : "點擊孵化";
+    btn.setAttribute("aria-label", slot.hatched ? "變回蛋" : "孵化");
+    btn.onclick = function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      toggleSlotHatchEgg(slot.id);
+    };
   }
 
   function getSlotStageKey(slot) {
@@ -5269,8 +5319,7 @@
       el.innerHTML =
         '<button type="button" class="slot__num"></button>' +
         '<div class="slot__teacher-tools">' +
-        '  <button type="button" class="slot__teacher-btn slot__teacher-btn--hatch" title="強制孵化" aria-label="強制孵化">⚡</button>' +
-        '  <button type="button" class="slot__teacher-btn slot__teacher-btn--egg" title="變回蛋" aria-label="變回蛋">🥚</button>' +
+        '  <button type="button" class="slot__teacher-btn slot__teacher-btn--egg-toggle" title="孵化／變回蛋" aria-label="孵化／變回蛋">🥚</button>' +
         "</div>" +
         '<div class="slot__stage"></div>' +
         '<div class="slot__lives" aria-label="生命值"></div>' +
@@ -5294,22 +5343,7 @@
     const footerScore = el.querySelector(".slot__footer-part--score");
     const quickMenu = el.querySelector(".score-quick-menu");
 
-    const btnForceHatch = el.querySelector(".slot__teacher-btn--hatch");
-    const btnForceEgg = el.querySelector(".slot__teacher-btn--egg");
-    if (btnForceHatch) {
-      btnForceHatch.onclick = function (ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        forceHatchSlot(slot.id);
-      };
-    }
-    if (btnForceEgg) {
-      btnForceEgg.onclick = function (ev) {
-        ev.stopPropagation();
-        ev.preventDefault();
-        forceEggSlot(slot.id);
-      };
-    }
+    ensureSlotTeacherTools(el, slot);
 
     if (footerEmoji) {
       footerEmoji.textContent = slot.emoji || DEFAULT_EMOJI;
@@ -5458,32 +5492,20 @@
     }
   }
 
-  function forceHatchSlot(slotId) {
+  function toggleSlotHatchEgg(slotId) {
     if (!teacherMode && !ensureTeacherModeOn()) return;
     const slot = getSlotById(slotId);
     if (!slot) return;
     if (slot.hatched) {
-      alert(slot.id + " 號「" + slot.name + "」已經孵化過了。");
+      slot.hatched = false;
+      saveSlots();
+      renderSlotElement(slot);
       return;
     }
     slot.hatched = true;
     saveSlots();
     renderSlotElement(slot);
     playHatchSound();
-    alert("⚡ 已強制孵化 " + slot.id + " 號「" + slot.name + "」！");
-  }
-
-  function forceEggSlot(slotId) {
-    if (!teacherMode && !ensureTeacherModeOn()) return;
-    const slot = getSlotById(slotId);
-    if (!slot) return;
-    if (!slot.hatched) {
-      alert("此插槽已是蛋狀態。");
-      return;
-    }
-    slot.hatched = false;
-    saveSlots();
-    renderSlotElement(slot);
   }
 
   function refreshTeacherModeUI() {
@@ -5492,25 +5514,32 @@
       btnTeacherMode.classList.toggle("is-active", teacherMode);
       const labelEl = document.getElementById("teacher-mode-btn-label");
       if (labelEl) {
-        labelEl.textContent = teacherMode ? "教師模式-開" : "教師模式-關";
+        labelEl.textContent = teacherMode ? "編輯模式-開" : "編輯模式-關";
       }
       btnTeacherMode.title = teacherMode
-        ? "連擊兩下關閉教師模式"
-        : "連擊兩下開啟教師模式";
+        ? "連擊兩下關閉編輯模式"
+        : "連擊兩下開啟編輯模式";
       btnTeacherMode.setAttribute(
         "aria-label",
-        teacherMode ? "教師模式已開啟，連擊兩下關閉" : "教師模式已關閉，連擊兩下開啟"
+        teacherMode ? "編輯模式已開啟，連擊兩下關閉" : "編輯模式已關閉，連擊兩下開啟"
       );
     }
     updateBulkPickUI();
     refreshScoreUndoButton();
     refreshMissionPickButton();
     syncAllQuickScoreMenus();
+    slots.forEach(function (slot) {
+      const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
+      if (el) {
+        ensureSlotTeacherTools(el, slot);
+        updateSlotNavInteractable(el, slot);
+      }
+    });
   }
 
   function ensureTeacherModeOn() {
     if (teacherMode) return true;
-    alert("請連擊兩下左上角「教師模式」按鈕以開啟。");
+    alert("請連擊兩下左上角「編輯模式」按鈕以開啟。");
     return false;
   }
 

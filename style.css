@@ -24,7 +24,7 @@ body {
 body {
   font-family: "Segoe UI", "Microsoft JhengHei", "PingFang TC", sans-serif;
   background-color: var(--bg-deep);
-  background-image: url("images/bg.png?v=7");
+  background-image: url("images/bg.png?v=8");
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -3476,12 +3476,15 @@ body.teacher-mode-active .slot__teacher-tools {
   border-color: rgba(94, 234, 212, 0.55);
 }
 
-.slot__teacher-btn--hatch {
-  color: #fde68a;
+.slot__teacher-btn--egg-toggle {
+  font-size: 0.65rem;
 }
 
-.slot__teacher-btn--egg {
-  font-size: 0.65rem;
+body.teacher-mode-active .slot.is-hatched .slot__stage,
+body.teacher-mode-active .slot.is-hatched .slot__viewer,
+body.teacher-mode-active .slot.is-hatched .slot__stage model-viewer {
+  cursor: pointer;
+  pointer-events: auto;
 }
 
 /* 彩色蛋 */
