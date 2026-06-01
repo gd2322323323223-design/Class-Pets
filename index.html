@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>欣賞園地</title>
-  <link rel="stylesheet" href="style.css?v=72" />
+  <link rel="stylesheet" href="style.css?v=73" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v72</div>
+  <div class="build-version-badge" aria-label="版本號">v73</div>
 
   <div
     id="class-code-modal"
@@ -385,6 +385,39 @@
   </div>
 
   <div
+    id="group-builder-modal"
+    class="group-builder-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="group-builder-title"
+  >
+    <div class="group-builder-modal__card">
+      <h2 id="group-builder-title" class="group-builder-modal__title">新增組別</h2>
+      <p class="group-builder-modal__hint">請輸入組別名稱，並點選學生加入該組。</p>
+      <label class="group-builder-modal__field" for="group-builder-name">
+        <span>組別名稱</span>
+        <input
+          id="group-builder-name"
+          class="group-builder-modal__input"
+          type="text"
+          maxlength="20"
+          placeholder="例如：紅隊"
+        />
+      </label>
+      <div class="group-builder-modal__toolbar">
+        <button type="button" id="btn-group-builder-all" class="tools-btn tools-btn--ghost">全選</button>
+        <button type="button" id="btn-group-builder-none" class="tools-btn tools-btn--ghost">清除</button>
+      </div>
+      <ul id="group-builder-student-list" class="group-builder-student-list"></ul>
+      <div class="group-builder-modal__actions">
+        <button type="button" id="btn-group-builder-confirm" class="tools-btn tools-btn--primary">建立組別</button>
+        <button type="button" id="btn-group-builder-cancel" class="tools-btn tools-btn--ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div
     id="lucky-result-modal"
     class="lucky-modal"
     hidden
@@ -639,6 +672,7 @@
     aria-modal="true"
     aria-labelledby="class-progress-celebration-title"
   >
+    <div id="class-progress-celebration-fx" class="class-progress-celebration-fx" aria-hidden="true"></div>
     <div class="class-progress-celebration-modal__card">
       <div class="class-progress-celebration-modal__glow" aria-hidden="true"></div>
       <h2 id="class-progress-celebration-title" class="class-progress-celebration-modal__title">
@@ -787,6 +821,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=72"></script>
+  <script src="script.js?v=73"></script>
 </body>
 </html>

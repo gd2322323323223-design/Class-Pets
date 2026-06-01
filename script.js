@@ -190,6 +190,7 @@
   const slotEmojiTimers = {};
   let dailyMissionDrawRunning = false;
   let missionConfettiTimerId = null;
+  let classProgressCelebrationFxTimerId = null;
   let currentDailyMission = null;
   let missionReminderVisible = false;
   let dailyMissionDrawCommitted = false;
@@ -339,6 +340,7 @@
     }
     modal.hidden = false;
     document.body.classList.add("class-progress-celebration-open");
+    launchClassProgressCelebrationFx();
     playClassCelebrationSound();
   }
 
@@ -346,6 +348,44 @@
     const modal = document.getElementById("class-progress-celebration-modal");
     if (modal) modal.hidden = true;
     document.body.classList.remove("class-progress-celebration-open");
+    stopClassProgressCelebrationFx();
+  }
+
+  function stopClassProgressCelebrationFx() {
+    if (classProgressCelebrationFxTimerId !== null) {
+      clearInterval(classProgressCelebrationFxTimerId);
+      classProgressCelebrationFxTimerId = null;
+    }
+    const layer = document.getElementById("class-progress-celebration-fx");
+    if (layer) layer.innerHTML = "";
+  }
+
+  function launchClassProgressCelebrationFx() {
+    const layer = document.getElementById("class-progress-celebration-fx");
+    if (!layer) return;
+    stopClassProgressCelebrationFx();
+    const colors = ["#fde047", "#f97316", "#ec4899", "#38bdf8", "#a78bfa", "#22c55e"];
+    classProgressCelebrationFxTimerId = setInterval(function () {
+      for (let i = 0; i < 12; i++) {
+        const isRibbon = Math.random() < 0.3;
+        const piece = document.createElement("span");
+        piece.className =
+          "class-progress-celebration-fx__piece " +
+          (isRibbon
+            ? "class-progress-celebration-fx__piece--ribbon"
+            : "class-progress-celebration-fx__piece--confetti");
+        piece.style.left = Math.random() * 100 + "%";
+        piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+        piece.style.setProperty("--fx-drift", Math.round((Math.random() - 0.5) * 220) + "px");
+        piece.style.animationDuration =
+          (isRibbon ? 3.8 : 2.8) + Math.random() * (isRibbon ? 1.8 : 1.6) + "s";
+        piece.style.animationDelay = Math.random() * 0.32 + "s";
+        layer.appendChild(piece);
+        setTimeout(function () {
+          piece.remove();
+        }, 6200);
+      }
+    }, 210);
   }
 
   function initClassProgressUI() {
@@ -3002,6 +3042,36 @@
     if (btnClose) btnClose.addEventListener("click", closeGroupManageModal);
     const btnAdd = document.getElementById("btn-group-add");
     if (btnAdd) btnAdd.addEventListener("click", onAddGroup);
+    const builderModal = document.getElementById("group-builder-modal");
+    if (builderModal) {
+      builderModal.addEventListener("click", function (ev) {
+        if (ev.target === builderModal) closeGroupBuilderModal();
+      });
+    }
+    const builderBtnCancel = document.getElementById("btn-group-builder-cancel");
+    if (builderBtnCancel) {
+      builderBtnCancel.addEventListener("click", closeGroupBuilderModal);
+    }
+    const builderBtnConfirm = document.getElementById("btn-group-builder-confirm");
+    if (builderBtnConfirm) {
+      builderBtnConfirm.addEventListener("click", confirmAddGroupFromBuilder);
+    }
+    const builderBtnAll = document.getElementById("btn-group-builder-all");
+    if (builderBtnAll) {
+      builderBtnAll.addEventListener("click", function () {
+        document.querySelectorAll(".group-builder-student-check").forEach(function (el) {
+          el.checked = true;
+        });
+      });
+    }
+    const builderBtnNone = document.getElementById("btn-group-builder-none");
+    if (builderBtnNone) {
+      builderBtnNone.addEventListener("click", function () {
+        document.querySelectorAll(".group-builder-student-check").forEach(function (el) {
+          el.checked = false;
+        });
+      });
+    }
 
     const membersModal = document.getElementById("group-members-modal");
     const membersClose = document.getElementById("btn-group-members-close");
@@ -3193,6 +3263,7 @@
   function closeGroupManageModal() {
     const modal = document.getElementById("group-manage-modal");
     if (modal) modal.hidden = true;
+    closeGroupBuilderModal();
     document.body.classList.remove("group-manage-open");
     renderGroupButtons();
   }
@@ -3248,13 +3319,70 @@
       alert("最多只能建立 " + MAX_GROUPS + " 個組別。");
       return;
     }
-    const nameInput = prompt("請輸入新組別名稱：", "組別 " + (groups.length + 1));
-    if (nameInput === null) return;
-    const name = nameInput.trim() || "組別 " + (groups.length + 1);
-    groups.push({ id: nextGroupId(), name: name, memberIds: [] });
+    openGroupBuilderModal();
+  }
+
+  function openGroupBuilderModal() {
+    const modal = document.getElementById("group-builder-modal");
+    const nameInput = document.getElementById("group-builder-name");
+    const list = document.getElementById("group-builder-student-list");
+    if (!modal || !nameInput || !list) return;
+    const defaultName = "組別 " + (groups.length + 1);
+    nameInput.value = defaultName;
+    list.innerHTML = "";
+    slots.forEach(function (slot) {
+      const li = document.createElement("li");
+      li.className = "group-builder-student-item";
+      li.innerHTML =
+        '<input type="checkbox" class="group-builder-student-check" data-slot-id="' +
+        slot.id +
+        '" />' +
+        "<span>" +
+        slotDisplayLabel(slot) +
+        "</span>";
+      const input = li.querySelector(".group-builder-student-check");
+      li.addEventListener("click", function (ev) {
+        if (ev.target === input) return;
+        input.checked = !input.checked;
+      });
+      list.appendChild(li);
+    });
+    modal.hidden = false;
+    setTimeout(function () {
+      nameInput.focus();
+      nameInput.select();
+    }, 0);
+  }
+
+  function closeGroupBuilderModal() {
+    const modal = document.getElementById("group-builder-modal");
+    if (modal) modal.hidden = true;
+  }
+
+  function getGroupBuilderSelectedIds() {
+    const ids = [];
+    document.querySelectorAll(".group-builder-student-check:checked").forEach(function (el) {
+      const id = parseInt(el.getAttribute("data-slot-id"), 10);
+      if (Number.isFinite(id)) ids.push(id);
+    });
+    return ids;
+  }
+
+  function confirmAddGroupFromBuilder() {
+    if (groups.length >= MAX_GROUPS) {
+      alert("最多只能建立 " + MAX_GROUPS + " 個組別。");
+      closeGroupBuilderModal();
+      return;
+    }
+    const nameInput = document.getElementById("group-builder-name");
+    const fallbackName = "組別 " + (groups.length + 1);
+    const name = nameInput ? (nameInput.value || "").trim() || fallbackName : fallbackName;
+    const selectedIds = getGroupBuilderSelectedIds();
+    groups.push({ id: nextGroupId(), name: name, memberIds: selectedIds });
     saveGroups();
     renderGroupManageList();
     renderGroupButtons();
+    closeGroupBuilderModal();
   }
 
   function onRenameGroup(groupId) {

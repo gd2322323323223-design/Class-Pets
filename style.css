@@ -1737,22 +1737,79 @@ body.teacher-mode-active .slot {
   display: none;
 }
 
+.class-progress-celebration-fx {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.class-progress-celebration-fx__piece {
+  position: absolute;
+  top: -12vh;
+  border-radius: 3px;
+  opacity: 0.94;
+  will-change: transform, opacity;
+}
+
+.class-progress-celebration-fx__piece--confetti {
+  width: 9px;
+  height: 14px;
+  animation: classCelebrationConfettiFall linear forwards;
+}
+
+.class-progress-celebration-fx__piece--ribbon {
+  width: 5px;
+  height: 34px;
+  border-radius: 999px;
+  animation: classCelebrationRibbonFall linear forwards;
+}
+
+@keyframes classCelebrationConfettiFall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(0deg) scale(0.9);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.98;
+  }
+  100% {
+    transform: translate3d(var(--fx-drift, 0px), 115vh, 0) rotate(780deg) scale(1.06);
+    opacity: 0.88;
+  }
+}
+
+@keyframes classCelebrationRibbonFall {
+  0% {
+    transform: translate3d(0, -12vh, 0) rotate(-8deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(var(--fx-drift, 0px), 115vh, 0) rotate(620deg);
+    opacity: 0.86;
+  }
+}
+
 .class-progress-celebration-modal__card {
   position: relative;
   width: min(92vw, 520px);
-  padding: 2rem 1.75rem 1.75rem;
-  border-radius: 24px;
+  padding: 2.25rem 1.85rem 1.85rem;
+  border-radius: 28px;
   text-align: center;
   background: linear-gradient(
-    165deg,
-    rgba(255, 253, 231, 0.98) 0%,
-    rgba(255, 236, 179, 0.97) 50%,
-    rgba(255, 213, 128, 0.96) 100%
+    160deg,
+    rgba(255, 254, 239, 0.98) 0%,
+    rgba(254, 240, 180, 0.98) 45%,
+    rgba(251, 191, 36, 0.9) 100%
   );
-  border: 3px solid rgba(249, 115, 22, 0.45);
+  border: 3px solid rgba(217, 119, 6, 0.5);
   box-shadow:
-    0 28px 72px rgba(61, 26, 90, 0.35),
-    0 0 48px rgba(255, 193, 7, 0.35);
+    0 28px 72px rgba(61, 26, 90, 0.42),
+    0 0 48px rgba(251, 191, 36, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
   animation: luckyModalIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -1770,15 +1827,18 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-modal__title {
   position: relative;
-  margin: 0 0 0.75rem;
-  font-size: clamp(1.5rem, 4vw, 2rem);
+  margin: 0 0 0.8rem;
+  font-size: clamp(1.58rem, 4.2vw, 2.1rem);
   font-weight: 900;
   color: #7c2d12;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72),
+    0 6px 22px rgba(180, 83, 9, 0.25);
 }
 
 .class-progress-celebration-modal__message {
   position: relative;
-  margin: 0 0 1.25rem;
+  margin: 0 0 1.3rem;
   font-size: clamp(1rem, 2.5vw, 1.2rem);
   line-height: 1.55;
   color: #431407;
@@ -1793,6 +1853,9 @@ body.teacher-mode-active .slot {
   position: relative;
   max-width: 240px;
   margin: 0 auto;
+  box-shadow:
+    0 8px 20px rgba(217, 119, 6, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45);
 }
 
 .dash-header__badge {
@@ -2532,12 +2595,121 @@ body.teacher-mode-active .slot {
 
 .group-manage-item__btn--delete {
   background: #fee2e2;
-  color: #b91c1c;
+  color: #111827;
 }
 
 .group-manage-modal__actions {
   display: flex;
   flex-direction: column;
+  gap: 0.45rem;
+}
+
+.group-builder-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 350;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(30, 20, 10, 0.45);
+  backdrop-filter: blur(4px);
+}
+
+.group-builder-modal[hidden] {
+  display: none;
+}
+
+.group-builder-modal__card {
+  width: min(440px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 1.2rem;
+  border-radius: 18px;
+  background: linear-gradient(165deg, #fffef9, #fef3c7);
+  border: 2px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+}
+
+.group-builder-modal__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #78350f;
+}
+
+.group-builder-modal__hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.group-builder-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 0.65rem;
+}
+
+.group-builder-modal__field span {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #78350f;
+}
+
+.group-builder-modal__input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 53, 15, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  color: #1f2937;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.group-builder-modal__toolbar {
+  display: flex;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.group-builder-modal__toolbar .tools-btn--ghost {
+  color: #78350f;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(120, 53, 15, 0.25);
+}
+
+.group-builder-student-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 0 0 0.8rem;
+  max-height: 46vh;
+  overflow-y: auto;
+}
+
+.group-builder-student-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 53, 15, 0.2);
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1a1208;
+  cursor: pointer;
+}
+
+.group-builder-student-item input {
+  flex-shrink: 0;
+}
+
+.group-builder-modal__actions {
+  display: flex;
   gap: 0.45rem;
 }
 
