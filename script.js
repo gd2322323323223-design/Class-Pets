@@ -328,7 +328,7 @@
       "class-progress-celebration-message"
     );
     if (titleEl) {
-      titleEl.textContent = "🎉全班總得分突破" + threshold + "分！🎉";
+      titleEl.textContent = "🎉 全班總得分突破" + threshold + "分！ 🎉";
     }
     if (messageEl) {
       messageEl.innerHTML =

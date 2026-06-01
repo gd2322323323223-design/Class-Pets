@@ -1728,9 +1728,14 @@ body.teacher-mode-active .slot {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1.5rem;
-  background: rgba(61, 26, 90, 0.55);
-  backdrop-filter: blur(10px);
+  padding: 0;
+  background: radial-gradient(
+    circle at center,
+    rgba(91, 33, 182, 0.38) 0%,
+    rgba(61, 26, 90, 0.62) 55%,
+    rgba(15, 23, 42, 0.68) 100%
+  );
+  backdrop-filter: blur(8px);
   border: none;
   outline: none;
   box-shadow: none;
@@ -1742,7 +1747,7 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-fx {
   position: absolute;
-  inset: 0;
+  inset: -10vh -8vw;
   overflow: hidden;
   pointer-events: none;
   border: none;
@@ -1801,15 +1806,15 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-modal__card {
   position: relative;
-  width: min(92vw, 520px);
-  padding: 2.25rem 1.85rem 1.85rem;
-  border-radius: 28px;
+  width: min(92vw, 560px);
+  padding: 2.2rem 2rem 1.95rem;
+  border-radius: 30px;
   text-align: center;
   background: linear-gradient(
-    160deg,
-    rgba(255, 254, 239, 0.98) 0%,
-    rgba(254, 240, 180, 0.98) 45%,
-    rgba(251, 191, 36, 0.9) 100%
+    155deg,
+    rgba(255, 254, 240, 0.98) 0%,
+    rgba(255, 245, 200, 0.98) 40%,
+    rgba(252, 211, 77, 0.94) 100%
   );
   border: 3px solid rgba(217, 119, 6, 0.5);
   box-shadow:
@@ -1817,6 +1822,20 @@ body.teacher-mode-active .slot {
     0 0 48px rgba(251, 191, 36, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
   animation: luckyModalIn 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.class-progress-celebration-modal__card::before {
+  content: "";
+  position: absolute;
+  inset: 0.7rem 0.9rem auto;
+  height: 38%;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.38) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
 }
 
 .class-progress-celebration-modal__glow {
@@ -1833,9 +1852,11 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-modal__title {
   position: relative;
-  margin: 0 0 0.8rem;
-  font-size: clamp(1.58rem, 4.2vw, 2.1rem);
+  margin: 0 auto 0.95rem;
+  font-size: clamp(1.5rem, 4vw, 2rem);
   font-weight: 900;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
   color: #7c2d12;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.72),
@@ -1844,10 +1865,15 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-modal__message {
   position: relative;
-  margin: 0 0 1.3rem;
-  font-size: clamp(1rem, 2.5vw, 1.2rem);
-  line-height: 1.55;
-  color: #431407;
+  margin: 0 0 1.4rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.34);
+  border: 1px solid rgba(180, 83, 9, 0.18);
+  font-size: clamp(1.03rem, 2.45vw, 1.22rem);
+  line-height: 1.68;
+  font-weight: 800;
+  color: #4a220f;
 }
 
 .class-progress-celebration-modal__message strong {
@@ -1857,8 +1883,11 @@ body.teacher-mode-active .slot {
 
 .class-progress-celebration-modal__card > .tools-btn--lucky {
   position: relative;
-  max-width: 240px;
+  max-width: 260px;
   margin: 0 auto;
+  font-size: 1.02rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
   box-shadow:
     0 8px 20px rgba(217, 119, 6, 0.38),
     inset 0 1px 0 rgba(255, 255, 255, 0.45);
