@@ -3095,7 +3095,7 @@ body.bulk-pick-active .slot {
 
 .slot__fx-stars {
   position: absolute;
-  inset: 10% 14% 12% 14%;
+  inset: 6% 8% 8% 8%;
   pointer-events: none;
   z-index: 3;
   overflow: visible;
@@ -3118,49 +3118,49 @@ body.bulk-pick-active .slot {
 }
 
 .slot__fx-star--1 {
-  top: 8%;
-  left: 20%;
+  top: 4%;
+  left: 12%;
   --star-i: 0;
 }
 
 .slot__fx-star--2 {
-  top: 6%;
-  right: 20%;
+  top: 2%;
+  right: 12%;
   --star-i: 1;
 }
 
 .slot__fx-star--3 {
-  top: 34%;
-  right: 10%;
+  top: 30%;
+  right: 2%;
   --star-i: 2;
 }
 
 .slot__fx-star--4 {
-  bottom: 18%;
-  right: 18%;
+  bottom: 12%;
+  right: 10%;
   --star-i: 3;
 }
 
 .slot__fx-star--5 {
-  bottom: 16%;
-  left: 18%;
+  bottom: 10%;
+  left: 10%;
   --star-i: 4;
 }
 
 .slot__fx-star--6 {
-  top: 32%;
-  left: 10%;
+  top: 28%;
+  left: 2%;
   --star-i: 5;
 }
 
 @keyframes slotStarFloat {
   0%,
   100% {
-    transform: translateY(0) scale(0.94) rotate(0deg);
-    opacity: 0.82;
+    transform: translateY(0) scale(0.92) rotate(0deg);
+    opacity: 0.8;
   }
   50% {
-    transform: translateY(-4px) scale(1.05) rotate(12deg);
+    transform: translateY(-6px) scale(1.06) rotate(14deg);
     opacity: 1;
   }
 }
