@@ -363,6 +363,10 @@
 
   function saveDailyScoreLog(pack) {
     dailyScorePack = pack;
+    try {
+      localStorage.setItem(DAILY_SCORE_STORAGE_KEY, JSON.stringify(pack));
+    } catch (e) {}
+    updateClassProgress();
     scheduleCloudSync();
   }
 
@@ -371,7 +375,26 @@
     let pack = dailyScorePack;
 
     if (!pack || !Array.isArray(pack.history)) {
+      try {
+        const raw = localStorage.getItem(DAILY_SCORE_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            pack = parsed;
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!pack || !Array.isArray(pack.history)) {
       pack = { currentDate: today, todayScore: 0, history: [] };
+    }
+
+    if (typeof pack.todayScore !== "number") {
+      pack.todayScore = 0;
+    }
+    if (!Array.isArray(pack.history)) {
+      pack.history = [];
     }
 
     if (pack.currentDate !== today) {
@@ -601,14 +624,16 @@
 
   function applyDailyScorePackFromCloud(raw) {
     const today = todayDateKey();
-    if (!raw || !Array.isArray(raw.history)) {
-      dailyScorePack = { currentDate: today, todayScore: 0, history: [] };
+    if (!raw || typeof raw !== "object") {
+      if (!dailyScorePack) {
+        dailyScorePack = { currentDate: today, todayScore: 0, history: [] };
+      }
       return;
     }
     dailyScorePack = {
       currentDate: raw.currentDate || today,
       todayScore: typeof raw.todayScore === "number" ? raw.todayScore : 0,
-      history: raw.history.slice(),
+      history: Array.isArray(raw.history) ? raw.history.slice() : [],
     };
     if (dailyScorePack.currentDate !== today) {
       if (dailyScorePack.currentDate && dailyScorePack.todayScore > 0) {
@@ -627,6 +652,9 @@
       dailyScorePack.currentDate = today;
       dailyScorePack.todayScore = 0;
     }
+    try {
+      localStorage.setItem(DAILY_SCORE_STORAGE_KEY, JSON.stringify(dailyScorePack));
+    } catch (e) {}
   }
 
   function buildDefaultCloudData() {
@@ -819,7 +847,7 @@
       function (snap) {
         const data = snap.val();
         const remoteTs = data && data.updatedAt ? data.updatedAt : 0;
-        if (remoteTs && remoteTs === lastCloudWriteAt) return;
+        if (lastCloudWriteAt && remoteTs && remoteTs <= lastCloudWriteAt) return;
         cloudSyncSuspended = true;
         applyCloudData(data || buildDefaultCloudData());
         cloudSyncSuspended = false;
@@ -4363,6 +4391,120 @@
     saveMissionState();
   }
 
+  function initMissionStackDrag() {
+    const stack = document.getElementById("dash-mission-stack");
+    if (!stack || stack.dataset.dragBound === "1") return;
+    stack.dataset.dragBound = "1";
+
+    const MISSION_STACK_POS_KEY = "mission-stack-pos-v1";
+    let missionStackUserMoved = false;
+    let dragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragOriginLeft = 0;
+    let dragOriginTop = 0;
+
+    function clampMissionStackPosition(left, top) {
+      const margin = 8;
+      const maxLeft = Math.max(margin, window.innerWidth - stack.offsetWidth - margin);
+      const maxTop = Math.max(margin, window.innerHeight - stack.offsetHeight - margin);
+      return {
+        left: Math.min(Math.max(left, margin), maxLeft),
+        top: Math.min(Math.max(top, margin), maxTop),
+      };
+    }
+
+    function applyMissionStackPosition(left, top) {
+      const pos = clampMissionStackPosition(left, top);
+      stack.style.left = pos.left + "px";
+      stack.style.top = pos.top + "px";
+      stack.style.right = "auto";
+      missionStackUserMoved = true;
+    }
+
+    function saveMissionStackPosition() {
+      if (!missionStackUserMoved) return;
+      const rect = stack.getBoundingClientRect();
+      try {
+        localStorage.setItem(
+          MISSION_STACK_POS_KEY,
+          JSON.stringify({ left: rect.left, top: rect.top })
+        );
+      } catch (e) {}
+    }
+
+    try {
+      const raw = localStorage.getItem(MISSION_STACK_POS_KEY);
+      if (raw) {
+        const saved = JSON.parse(raw);
+        if (Number.isFinite(saved.left) && Number.isFinite(saved.top)) {
+          applyMissionStackPosition(saved.left, saved.top);
+        }
+      }
+    } catch (e) {}
+
+    function onDragStart(clientX, clientY) {
+      dragging = true;
+      dragStartX = clientX;
+      dragStartY = clientY;
+      const rect = stack.getBoundingClientRect();
+      dragOriginLeft = rect.left;
+      dragOriginTop = rect.top;
+      stack.classList.add("is-dragging");
+    }
+
+    function onDragMove(clientX, clientY) {
+      if (!dragging) return;
+      const dx = clientX - dragStartX;
+      const dy = clientY - dragStartY;
+      applyMissionStackPosition(dragOriginLeft + dx, dragOriginTop + dy);
+    }
+
+    function onDragEnd() {
+      if (!dragging) return;
+      dragging = false;
+      stack.classList.remove("is-dragging");
+      saveMissionStackPosition();
+    }
+
+    stack.addEventListener("mousedown", function (ev) {
+      if (ev.button !== 0) return;
+      if (ev.target.closest("button")) return;
+      if (window.matchMedia("(max-width: 768px)").matches) return;
+      ev.preventDefault();
+      onDragStart(ev.clientX, ev.clientY);
+    });
+
+    document.addEventListener("mousemove", function (ev) {
+      if (!dragging) return;
+      onDragMove(ev.clientX, ev.clientY);
+    });
+
+    document.addEventListener("mouseup", onDragEnd);
+
+    stack.addEventListener(
+      "touchstart",
+      function (ev) {
+        if (ev.target.closest("button")) return;
+        if (window.matchMedia("(max-width: 768px)").matches) return;
+        if (!ev.touches || !ev.touches[0]) return;
+        onDragStart(ev.touches[0].clientX, ev.touches[0].clientY);
+      },
+      { passive: true }
+    );
+
+    document.addEventListener(
+      "touchmove",
+      function (ev) {
+        if (!dragging || !ev.touches || !ev.touches[0]) return;
+        onDragMove(ev.touches[0].clientX, ev.touches[0].clientY);
+      },
+      { passive: true }
+    );
+
+    document.addEventListener("touchend", onDragEnd);
+  }
+
   function initDailyMissionModule() {
     const drawBtn = document.getElementById("btn-daily-mission-draw");
     const endBtn = document.getElementById("btn-mission-end");
@@ -4403,6 +4545,7 @@
         }
       });
     }
+    initMissionStackDrag();
   }
 
   function buildBackupArchiveObject() {

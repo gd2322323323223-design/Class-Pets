@@ -3895,6 +3895,7 @@ body.teacher-mode-active
   position: fixed;
   top: 2.35rem;
   right: 0.85rem;
+  left: auto;
   z-index: 220;
   display: flex;
   flex-direction: column;
@@ -3902,6 +3903,16 @@ body.teacher-mode-active
   align-items: flex-end;
   width: min(248px, 44vw);
   max-width: 280px;
+  touch-action: none;
+}
+
+.dash-mission-stack.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.dash-mission-stack:not(.is-dragging) {
+  cursor: grab;
 }
 
 .dash-mission-stack[hidden] {
