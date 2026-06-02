@@ -208,7 +208,7 @@
     {
       id: "harvest",
       title: "收穫滿滿",
-      desc: "課堂完結時，如果有同學分享這節課學會了什麼新知識。",
+      desc: "課堂完結時，如果有同學分享這節課學會了哪些新知識。",
       reward: MISSION_DEFAULT_REWARD,
     },
     {
@@ -220,13 +220,13 @@
     {
       id: "active",
       title: "積極學習",
-      desc: "這節課裏，所有同學積極舉手回答問題。",
+      desc: "這節課裏，所有同學都積極舉手回答問題。",
       reward: MISSION_DEFAULT_REWARD,
     },
     {
       id: "rules",
       title: "認真守規",
-      desc: "這節課裏，如果沒有人被扣除愛心❤️。",
+      desc: "這節課裏，如果所有同學都聽從老師指令。",
       reward: MISSION_DEFAULT_REWARD,
     },
     {
@@ -333,7 +333,7 @@
     if (messageEl) {
       messageEl.innerHTML =
         "恭喜全班晉升到LV." +
-        level +
+        level + 
         "！<br />加油！向LV." +
         (level + 1) +
         "進發！";
