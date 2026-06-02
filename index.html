@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>欣賞園地</title>
-  <link rel="stylesheet" href="style.css?v=78" />
+  <link rel="stylesheet" href="style.css?v=79" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -19,7 +19,7 @@
     aria-modal="true"
     aria-labelledby="site-access-title"
   >
-    <div class="site-access-modal__card">
+    <div class="site-access-modal__card modal-surface">
       <h2 id="site-access-title" class="site-access-modal__title">進入網站</h2>
       <p class="site-access-modal__hint">請輸入密碼</p>
       <label class="site-access-modal__field" for="site-access-password">
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v78</div>
+  <div class="build-version-badge" aria-label="版本號">v79</div>
 
   <div
     id="class-code-modal"
@@ -54,7 +54,7 @@
     aria-modal="true"
     aria-labelledby="class-code-title"
   >
-    <div class="class-code-modal__card">
+    <div class="class-code-modal__card modal-surface">
       <h2 id="class-code-title" class="class-code-modal__title">☁️ 連接班級雲端</h2>
       <p class="class-code-modal__hint">
         請輸入班級代碼（例如：<code>1b</code>、<code>3a</code>）。不同代碼的資料在雲端完全獨立。
@@ -124,8 +124,24 @@
     </header>
 
     <div class="tools-sidebar__scroll">
-    <section class="tools-panel tools-panel--mission" aria-labelledby="tools-mission-title">
-      <h3 id="tools-mission-title" class="tools-panel__title">功能 1：今日加分任務</h3>
+    <section class="tools-panel tools-panel--mission tools-panel--collapsible" aria-labelledby="tools-mission-title">
+      <button
+        type="button"
+        id="btn-mission-panel-toggle"
+        class="tools-panel__toggle"
+        aria-expanded="false"
+        aria-controls="mission-panel-body"
+      >
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">🎲</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-mission-title" class="tools-panel__title">今日加分任務</span>
+            <span class="tools-panel__subtitle">功能 1</span>
+          </span>
+        </span>
+        <span class="tools-panel__chevron" aria-hidden="true">▼</span>
+      </button>
+      <div id="mission-panel-body" class="tools-panel__collapsible-body" hidden>
       <div class="tools-panel__actions">
         <button
           type="button"
@@ -135,10 +151,27 @@
           🎲 抽取今日任務
         </button>
       </div>
+      </div>
     </section>
 
-    <section class="tools-panel tools-panel--lucky" aria-labelledby="tools-lucky-title">
-      <h3 id="tools-lucky-title" class="tools-panel__title">功能 2：幸運抽籤</h3>
+    <section class="tools-panel tools-panel--lucky tools-panel--collapsible" aria-labelledby="tools-lucky-title">
+      <button
+        type="button"
+        id="btn-lucky-panel-toggle"
+        class="tools-panel__toggle"
+        aria-expanded="false"
+        aria-controls="lucky-panel-body"
+      >
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">🌟</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-lucky-title" class="tools-panel__title">幸運抽籤</span>
+            <span class="tools-panel__subtitle">功能 2</span>
+          </span>
+        </span>
+        <span class="tools-panel__chevron" aria-hidden="true">▼</span>
+      </button>
+      <div id="lucky-panel-body" class="tools-panel__collapsible-body" hidden>
       <label class="tools-field" for="lucky-count">
         <span>挑選人數（1～22）</span>
         <input
@@ -153,10 +186,27 @@
       <button type="button" id="btn-lucky-start" class="tools-btn tools-btn--lucky">
         🌟 開始抽籤
       </button>
+      </div>
     </section>
 
-    <section class="tools-panel tools-panel--timer" aria-labelledby="tools-timer-title">
-      <h3 id="tools-timer-title" class="tools-panel__title">功能 3：課堂計時器</h3>
+    <section class="tools-panel tools-panel--timer tools-panel--collapsible" aria-labelledby="tools-timer-title">
+      <button
+        type="button"
+        id="btn-timer-panel-toggle"
+        class="tools-panel__toggle"
+        aria-expanded="false"
+        aria-controls="timer-panel-body"
+      >
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">⏱</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-timer-title" class="tools-panel__title">課堂計時器</span>
+            <span class="tools-panel__subtitle">功能 3</span>
+          </span>
+        </span>
+        <span class="tools-panel__chevron" aria-hidden="true">▼</span>
+      </button>
+      <div id="timer-panel-body" class="tools-panel__collapsible-body" hidden>
       <div class="timer-mode-tabs" role="tablist">
         <button
           type="button"
@@ -209,6 +259,7 @@
           🔔 分鐘提示
         </button>
       </div>
+      </div>
     </section>
 
     <section class="tools-panel tools-panel--backup tools-panel--collapsible" aria-labelledby="tools-backup-title">
@@ -219,7 +270,13 @@
         aria-expanded="false"
         aria-controls="backup-panel-body"
       >
-        <span id="tools-backup-title" class="tools-panel__title">📋 手動備份資料</span>
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">📋</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-backup-title" class="tools-panel__title">手動備份資料</span>
+            <span class="tools-panel__subtitle">資料管理</span>
+          </span>
+        </span>
         <span class="tools-panel__chevron" aria-hidden="true">▼</span>
       </button>
       <div id="backup-panel-body" class="tools-panel__collapsible-body" hidden>
@@ -260,7 +317,13 @@
         aria-expanded="false"
         aria-controls="class-code-panel-body"
       >
-        <span id="tools-class-code-title" class="tools-panel__title">切換班級</span>
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">☁️</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-class-code-title" class="tools-panel__title">切換班級</span>
+            <span class="tools-panel__subtitle">班級代碼</span>
+          </span>
+        </span>
         <span class="tools-panel__chevron" aria-hidden="true">▼</span>
       </button>
       <div id="class-code-panel-body" class="tools-panel__collapsible-body" hidden>
@@ -296,6 +359,82 @@
     </div>
   </div>
 
+  <div id="app-toast" class="app-toast" hidden aria-live="polite">
+    <div class="app-toast__card">
+      <p id="app-toast-text" class="app-toast__text"></p>
+    </div>
+  </div>
+
+  <div
+    id="app-confirm-modal"
+    class="app-dialog-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="app-confirm-title"
+  >
+    <div class="app-dialog-modal__card modal-surface">
+      <h2 id="app-confirm-title" class="app-dialog-modal__title">請確認</h2>
+      <p id="app-confirm-message" class="app-dialog-modal__message"></p>
+      <div class="app-dialog-modal__actions">
+        <button type="button" id="btn-app-confirm-ok" class="tools-btn tools-btn--primary">確定</button>
+        <button type="button" id="btn-app-confirm-cancel" class="tools-btn tools-btn--ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="app-prompt-modal"
+    class="app-dialog-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="app-prompt-title"
+  >
+    <div class="app-dialog-modal__card modal-surface">
+      <h2 id="app-prompt-title" class="app-dialog-modal__title">請輸入</h2>
+      <p id="app-prompt-message" class="app-dialog-modal__message"></p>
+      <label class="app-dialog-modal__field" for="app-prompt-input">
+        <span class="visually-hidden">輸入內容</span>
+        <input
+          id="app-prompt-input"
+          class="app-dialog-modal__input"
+          type="text"
+          autocomplete="off"
+        />
+      </label>
+      <textarea
+        id="app-prompt-textarea"
+        class="app-dialog-modal__textarea"
+        rows="4"
+        hidden
+        spellcheck="false"
+      ></textarea>
+      <div class="app-dialog-modal__actions">
+        <button type="button" id="btn-app-prompt-ok" class="tools-btn tools-btn--primary">確定</button>
+        <button type="button" id="btn-app-prompt-cancel" class="tools-btn tools-btn--ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="app-choice-modal"
+    class="app-dialog-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="app-choice-title"
+  >
+    <div class="app-dialog-modal__card modal-surface">
+      <h2 id="app-choice-title" class="app-dialog-modal__title">請選擇</h2>
+      <p id="app-choice-message" class="app-dialog-modal__message"></p>
+      <ul id="app-choice-list" class="app-choice-list"></ul>
+      <div class="app-dialog-modal__actions app-dialog-modal__actions--single">
+        <button type="button" id="btn-app-choice-cancel" class="tools-btn tools-btn--ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
   <div
     id="bulk-pick-modal"
     class="bulk-pick-modal"
@@ -304,7 +443,7 @@
     aria-modal="true"
     aria-labelledby="bulk-pick-title"
   >
-    <div class="bulk-pick-modal__card">
+    <div class="bulk-pick-modal__card modal-surface">
       <h2 id="bulk-pick-title" class="bulk-pick-modal__title">批量揀選學生</h2>
       <p class="bulk-pick-modal__hint">勾選要加分的學生，確認後可一次加分。</p>
       <div class="bulk-pick-modal__toolbar">
@@ -344,7 +483,7 @@
     aria-modal="true"
     aria-labelledby="group-manage-title"
   >
-    <div class="group-manage-modal__card">
+    <div class="group-manage-modal__card modal-surface">
       <h2 id="group-manage-title" class="group-manage-modal__title">管理組別</h2>
       <p class="group-manage-modal__hint">最多 10 組。點選組別可查看成員並加分。</p>
       <ul id="group-manage-list" class="group-manage-list"></ul>
@@ -363,7 +502,7 @@
     aria-modal="true"
     aria-labelledby="group-members-title"
   >
-    <div class="group-members-modal__card">
+    <div class="group-members-modal__card modal-surface">
       <h2 id="group-members-title" class="group-members-modal__title">組別成員</h2>
       <p id="group-members-count" class="group-members-modal__count"></p>
       <ul id="group-members-list" class="group-members-list"></ul>
@@ -418,7 +557,7 @@
     aria-modal="true"
     aria-labelledby="group-builder-title"
   >
-    <div class="group-builder-modal__card">
+    <div class="group-builder-modal__card modal-surface">
       <h2 id="group-builder-title" class="group-builder-modal__title">新增組別</h2>
       <p class="group-builder-modal__hint">請輸入組別名稱，並點選學生加入該組。</p>
       <label class="group-builder-modal__field" for="group-builder-name">
@@ -485,40 +624,6 @@
   </div>
 
   <div
-    id="mission-redraw-confirm-modal"
-    class="mission-redraw-confirm-modal"
-    hidden
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="mission-redraw-confirm-title"
-  >
-    <div class="mission-redraw-confirm-modal__card">
-      <p
-        id="mission-redraw-confirm-title"
-        class="mission-redraw-confirm-modal__lead"
-      >
-        是否要<span class="mission-redraw-confirm__highlight">重新抽取任務</span>？
-      </p>
-      <div class="mission-redraw-confirm-modal__actions">
-        <button
-          type="button"
-          id="btn-mission-redraw-yes"
-          class="tools-btn mission-redraw-confirm__btn-yes"
-        >
-          重新抽取任務
-        </button>
-        <button
-          type="button"
-          id="btn-mission-redraw-no"
-          class="tools-btn tools-btn--ghost mission-redraw-confirm__btn-no"
-        >
-          取消
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <div
     id="animal-pick-modal"
     class="animal-pick-modal"
     hidden
@@ -526,7 +631,7 @@
     aria-modal="true"
     aria-labelledby="animal-pick-title"
   >
-    <div class="animal-pick-modal__card">
+    <div class="animal-pick-modal__card modal-surface">
       <h2 id="animal-pick-title" class="animal-pick-modal__title">更改動物</h2>
       <p id="animal-pick-hint" class="animal-pick-modal__hint">請選擇動物（可與其他同學重複）</p>
       <ul id="animal-pick-list" class="animal-pick-list"></ul>
@@ -548,7 +653,7 @@
     aria-modal="true"
     aria-labelledby="mission-pick-title"
   >
-    <div class="mission-pick-modal__card">
+    <div class="mission-pick-modal__card modal-surface">
       <h2 id="mission-pick-title" class="mission-pick-modal__title">揀選今日任務</h2>
       <p class="mission-pick-modal__hint">請點選要顯示的任務（僅教師可見）</p>
       <ul id="mission-pick-list" class="mission-pick-list"></ul>
@@ -847,6 +952,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=78"></script>
+  <script src="script.js?v=79"></script>
 </body>
 </html>

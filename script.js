@@ -959,7 +959,9 @@
   function connectToClassCode(rawCode, callback) {
     const db = getDb();
     if (!db) {
-      alert(window.__firebaseInitError || "Firebase 尚未初始化。");
+      showAppToast(window.__firebaseInitError || "Firebase 尚未初始化。", {
+        variant: "warn",
+      });
       if (callback) callback(false);
       return;
     }
@@ -1025,18 +1027,21 @@
   function onClassCodeSwitchClick() {
     const input = document.getElementById("class-code-sidebar-input");
     const code = input ? input.value : "";
-    const ok = confirm(
-      "切換班級代碼將載入另一班級的雲端資料。\n確定要切換至「" + sanitizeClassCode(code) + "」嗎？"
-    );
-    if (!ok) return;
-    connectToClassCode(code, function (connected) {
-      if (connected && appBootstrapped) {
-        renderAll();
-        ensureGroupPanel();
-        renderGroupButtons();
-        updateClassProgress();
-        syncMissionHudLayout();
-      }
+    const sanitized = sanitizeClassCode(code);
+    showAppConfirm(
+      "切換班級代碼將載入另一班級的雲端資料。\n確定要切換至「" + sanitized + "」嗎？",
+      { title: "切換班級" }
+    ).then(function (ok) {
+      if (!ok) return;
+      connectToClassCode(code, function (connected) {
+        if (connected && appBootstrapped) {
+          renderAll();
+          ensureGroupPanel();
+          renderGroupButtons();
+          updateClassProgress();
+          syncMissionHudLayout();
+        }
+      });
     });
   }
 
@@ -1047,6 +1052,263 @@
       bodyEl.hidden = !willOpen;
       if (panelEl) panelEl.classList.toggle("is-open", willOpen);
       toggleEl.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+  }
+
+  let appToastTimeoutId = null;
+
+  function showAppToast(message, opts) {
+    opts = opts || {};
+    const duration = opts.duration != null ? opts.duration : 2800;
+    const toast = document.getElementById("app-toast");
+    const textEl = document.getElementById("app-toast-text");
+    if (!toast || !textEl) return;
+    textEl.textContent = message;
+    toast.classList.toggle("app-toast--success", opts.variant === "success");
+    toast.classList.toggle("app-toast--warn", opts.variant === "warn");
+    if (appToastTimeoutId) clearTimeout(appToastTimeoutId);
+    toast.hidden = false;
+    const card = toast.querySelector(".app-toast__card");
+    if (card) {
+      card.style.animation = "none";
+      void card.offsetWidth;
+      card.style.animation = "";
+    }
+    appToastTimeoutId = setTimeout(function () {
+      toast.hidden = true;
+      appToastTimeoutId = null;
+    }, duration);
+  }
+
+  function showAppConfirm(message, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      const modal = document.getElementById("app-confirm-modal");
+      const titleEl = document.getElementById("app-confirm-title");
+      const msgEl = document.getElementById("app-confirm-message");
+      const okBtn = document.getElementById("btn-app-confirm-ok");
+      const cancelBtn = document.getElementById("btn-app-confirm-cancel");
+      if (!modal || !msgEl || !okBtn || !cancelBtn) {
+        resolve(window.confirm(message));
+        return;
+      }
+
+      if (titleEl) titleEl.textContent = opts.title || "請確認";
+      msgEl.textContent = message;
+      okBtn.textContent = opts.confirmText || "確定";
+      cancelBtn.textContent = opts.cancelText || "取消";
+      okBtn.classList.toggle("tools-btn--primary", !opts.danger);
+      okBtn.classList.toggle("tools-btn--danger", !!opts.danger);
+
+      function finish(ok) {
+        modal.hidden = true;
+        document.body.classList.remove("app-dialog-open");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(ok);
+      }
+
+      function onOk() {
+        finish(true);
+      }
+
+      function onCancel() {
+        finish(false);
+      }
+
+      function onBackdrop(ev) {
+        if (ev.target === modal) finish(false);
+      }
+
+      function onKeydown(ev) {
+        if (ev.key === "Escape") finish(false);
+      }
+
+      modal.hidden = false;
+      document.body.classList.add("app-dialog-open");
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKeydown);
+      cancelBtn.focus();
+    });
+  }
+
+  function showAppPrompt(message, defaultValue, opts) {
+    opts = opts || {};
+    return new Promise(function (resolve) {
+      const modal = document.getElementById("app-prompt-modal");
+      const titleEl = document.getElementById("app-prompt-title");
+      const msgEl = document.getElementById("app-prompt-message");
+      const inputEl = document.getElementById("app-prompt-input");
+      const textareaEl = document.getElementById("app-prompt-textarea");
+      const okBtn = document.getElementById("btn-app-prompt-ok");
+      const cancelBtn = document.getElementById("btn-app-prompt-cancel");
+      if (!modal || !inputEl || !textareaEl || !okBtn || !cancelBtn) {
+        resolve(window.prompt(message, defaultValue));
+        return;
+      }
+
+      const useTextarea = !!opts.multiline;
+      const fieldEl = useTextarea ? textareaEl : inputEl;
+
+      if (titleEl) titleEl.textContent = opts.title || "請輸入";
+      if (msgEl) {
+        if (message) {
+          msgEl.textContent = message;
+          msgEl.hidden = false;
+        } else {
+          msgEl.textContent = "";
+          msgEl.hidden = true;
+        }
+      }
+
+      inputEl.hidden = useTextarea;
+      textareaEl.hidden = !useTextarea;
+      fieldEl.value = defaultValue != null ? defaultValue : "";
+      fieldEl.readOnly = !!opts.readonly;
+      if (opts.placeholder) fieldEl.placeholder = opts.placeholder;
+      else fieldEl.removeAttribute("placeholder");
+
+      okBtn.textContent = opts.readonly ? "關閉" : opts.confirmText || "確定";
+      cancelBtn.hidden = !!opts.readonly;
+
+      function finish(val) {
+        modal.hidden = true;
+        document.body.classList.remove("app-dialog-open");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(val);
+      }
+
+      function onOk() {
+        if (opts.readonly) {
+          finish(null);
+          return;
+        }
+        finish(fieldEl.value);
+      }
+
+      function onCancel() {
+        finish(null);
+      }
+
+      function onBackdrop(ev) {
+        if (ev.target === modal) finish(null);
+      }
+
+      function onKeydown(ev) {
+        if (ev.key === "Escape") finish(null);
+        if (ev.key === "Enter" && !useTextarea && !opts.readonly) {
+          ev.preventDefault();
+          onOk();
+        }
+      }
+
+      modal.hidden = false;
+      document.body.classList.add("app-dialog-open");
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKeydown);
+      setTimeout(function () {
+        fieldEl.focus();
+        if (!opts.readonly && fieldEl.select) fieldEl.select();
+      }, 0);
+    });
+  }
+
+  function showAppChoice(title, message, choices) {
+    return new Promise(function (resolve) {
+      const modal = document.getElementById("app-choice-modal");
+      const titleEl = document.getElementById("app-choice-title");
+      const msgEl = document.getElementById("app-choice-message");
+      const listEl = document.getElementById("app-choice-list");
+      const cancelBtn = document.getElementById("btn-app-choice-cancel");
+      if (!modal || !listEl || !cancelBtn) {
+        resolve(null);
+        return;
+      }
+
+      if (titleEl) titleEl.textContent = title || "請選擇";
+      if (msgEl) {
+        if (message) {
+          msgEl.textContent = message;
+          msgEl.hidden = false;
+        } else {
+          msgEl.textContent = "";
+          msgEl.hidden = true;
+        }
+      }
+
+      listEl.innerHTML = "";
+      const choiceButtons = [];
+      (choices || []).forEach(function (choice) {
+        const li = document.createElement("li");
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "app-choice-item";
+        btn.innerHTML =
+          choice.label +
+          (choice.hint
+            ? '<span class="app-choice-item__hint">' + choice.hint + "</span>"
+            : "");
+        btn.addEventListener("click", function () {
+          finish(choice.value);
+        });
+        li.appendChild(btn);
+        choiceButtons.push(btn);
+        listEl.appendChild(li);
+      });
+
+      function finish(val) {
+        modal.hidden = true;
+        document.body.classList.remove("app-dialog-open");
+        cancelBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(val);
+      }
+
+      function onCancel() {
+        finish(null);
+      }
+
+      function onBackdrop(ev) {
+        if (ev.target === modal) finish(null);
+      }
+
+      function onKeydown(ev) {
+        if (ev.key === "Escape") finish(null);
+      }
+
+      modal.hidden = false;
+      document.body.classList.add("app-dialog-open");
+      cancelBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKeydown);
+      if (choiceButtons.length) choiceButtons[0].focus();
+    });
+  }
+
+  function initToolsCollapsiblePanels() {
+    const panels = [
+      ["btn-mission-panel-toggle", "mission-panel-body", ".tools-panel--mission"],
+      ["btn-lucky-panel-toggle", "lucky-panel-body", ".tools-panel--lucky"],
+      ["btn-timer-panel-toggle", "timer-panel-body", ".tools-panel--timer"],
+      ["btn-backup-panel-toggle", "backup-panel-body", ".tools-panel--backup"],
+      ["btn-class-code-panel-toggle", "class-code-panel-body", ".tools-panel--class-code"],
+    ];
+    panels.forEach(function (entry) {
+      initCollapsiblePanel(
+        document.getElementById(entry[0]),
+        document.getElementById(entry[1]),
+        document.querySelector(entry[2])
+      );
     });
   }
 
@@ -1064,9 +1326,6 @@
     const submitBtn = document.getElementById("btn-class-code-submit");
     const input = document.getElementById("class-code-input");
     const switchBtn = document.getElementById("btn-class-code-switch");
-    const panelToggle = document.getElementById("btn-class-code-panel-toggle");
-    const panelBody = document.getElementById("class-code-panel-body");
-    const panel = document.querySelector(".tools-panel--class-code");
 
     if (submitBtn) submitBtn.addEventListener("click", onClassCodeSubmit);
     if (switchBtn) switchBtn.addEventListener("click", onClassCodeSwitchClick);
@@ -1078,12 +1337,7 @@
         }
       });
     }
-    initCollapsiblePanel(panelToggle, panelBody, panel);
-
-    const backupToggle = document.getElementById("btn-backup-panel-toggle");
-    const backupBody = document.getElementById("backup-panel-body");
-    const backupPanel = document.querySelector(".tools-panel--backup");
-    initCollapsiblePanel(backupToggle, backupBody, backupPanel);
+    initToolsCollapsiblePanels();
 
     const missionToggle = document.getElementById("btn-mission-reminder-toggle");
     const missionBody = document.getElementById("mission-reminder-body");
@@ -2548,7 +2802,7 @@
   function undoLastScoreAction() {
     if (!teacherMode) return;
     if (!scoreUndoStack.length) {
-      alert("沒有可復原的加減分行動。");
+      showAppToast("沒有可復原的加減分行動。", { variant: "warn" });
       return;
     }
     const snapshot = scoreUndoStack.pop();
@@ -2710,7 +2964,7 @@
   function confirmBulkPick() {
     bulkSelectedIds = getBulkPickModalSelectedIds();
     if (!bulkSelectedIds.length) {
-      alert("請至少揀選一位學生。");
+      showAppToast("請至少揀選一位學生。", { variant: "warn" });
       return;
     }
     bulkPickActive = true;
@@ -2797,7 +3051,7 @@
       }
     });
     if (!applied) {
-      alert("找不到已揀選的學生資料，請重新揀選。");
+      showAppToast("找不到已揀選的學生資料，請重新揀選。", { variant: "warn" });
       cancelBulkPick();
       return;
     }
@@ -2851,7 +3105,7 @@
     const raw = inputEl ? String(inputEl.value).trim() : "";
     const n = parseInt(raw, 10);
     if (!Number.isFinite(n) || n <= 0 || n > 99) {
-      alert("請輸入 1～99 的正整數。");
+      showAppToast("請輸入 1～99 的正整數。", { variant: "warn" });
       return;
     }
     if (inputEl) inputEl.value = "";
@@ -3255,18 +3509,22 @@
         customBtn.className = "group-members-modal__score-btn";
         customBtn.textContent = "自訂";
         customBtn.addEventListener("click", function () {
-          const raw = prompt(
-            "要為「" + group.name + "」全組加幾分？（可輸入正負整數，0 取消）",
-            "1"
-          );
-          if (raw === null) return;
-          const d = parseInt(raw, 10);
-          if (!Number.isFinite(d) || d === 0) {
-            if (raw !== "0") alert("請輸入非 0 的整數。");
-            return;
-          }
-          applyGroupScoreDelta(group, d);
-          closeGroupMembersModal();
+          showAppPrompt(
+            "可輸入正負整數，輸入 0 則取消。",
+            "1",
+            { title: "為「" + group.name + "」全組加分" }
+          ).then(function (raw) {
+            if (raw === null) return;
+            const d = parseInt(raw, 10);
+            if (!Number.isFinite(d) || d === 0) {
+              if (raw.trim() !== "0") {
+                showAppToast("請輸入非 0 的整數。", { variant: "warn" });
+              }
+              return;
+            }
+            applyGroupScoreDelta(group, d);
+            closeGroupMembersModal();
+          });
         });
         scoreBtns.appendChild(customBtn);
       }
@@ -3327,7 +3585,7 @@
     if (!group) return;
     const selectedIds = getGroupMembersAddSelectedIds();
     if (!selectedIds.length) {
-      alert("請至少選擇一位學生。");
+      showAppToast("請至少選擇一位學生。", { variant: "warn" });
       return;
     }
     selectedIds.forEach(function (slotId) {
@@ -3348,21 +3606,20 @@
     const group = getGroupById(groupId);
     const slot = getSlotById(slotId);
     if (!group || !slot) return;
-    if (
-      !confirm(
-        "確定將「" + slotDisplayLabel(slot) + "」移出「" + group.name + "」？"
-      )
-    ) {
-      return;
-    }
-    group.memberIds = group.memberIds.filter(function (id) {
-      return id !== slotId;
+    showAppConfirm(
+      "確定將「" + slotDisplayLabel(slot) + "」移出「" + group.name + "」？",
+      { title: "移出組別", confirmText: "移出", danger: true }
+    ).then(function (ok) {
+      if (!ok) return;
+      group.memberIds = group.memberIds.filter(function (id) {
+        return id !== slotId;
+      });
+      saveGroups();
+      renderGroupButtons();
+      if (activeGroupMembersModalId === groupId) {
+        renderGroupMembersModal(groupId);
+      }
     });
-    saveGroups();
-    renderGroupButtons();
-    if (activeGroupMembersModalId === groupId) {
-      renderGroupMembersModal(groupId);
-    }
   }
 
   function openGroupManageModal() {
@@ -3429,7 +3686,7 @@
 
   function onAddGroup() {
     if (groups.length >= MAX_GROUPS) {
-      alert("最多只能建立 " + MAX_GROUPS + " 個組別。");
+      showAppToast("最多只能建立 " + MAX_GROUPS + " 個組別。", { variant: "warn" });
       return;
     }
     openGroupBuilderModal();
@@ -3483,7 +3740,7 @@
 
   function confirmAddGroupFromBuilder() {
     if (groups.length >= MAX_GROUPS) {
-      alert("最多只能建立 " + MAX_GROUPS + " 個組別。");
+      showAppToast("最多只能建立 " + MAX_GROUPS + " 個組別。", { variant: "warn" });
       closeGroupBuilderModal();
       return;
     }
@@ -3501,75 +3758,99 @@
   function onRenameGroup(groupId) {
     const g = getGroupById(groupId);
     if (!g) return;
-    const input = prompt("請輸入新的組別名稱：", g.name);
-    if (input === null) return;
-    g.name = input.trim() || g.name;
-    saveGroups();
-    renderGroupManageList();
-    renderGroupButtons();
+    showAppPrompt("請輸入新的組別名稱：", g.name, { title: "重新命名組別" }).then(
+      function (input) {
+        if (input === null) return;
+        g.name = input.trim() || g.name;
+        saveGroups();
+        renderGroupManageList();
+        renderGroupButtons();
+      }
+    );
   }
 
   function onDeleteGroup(groupId) {
     const g = getGroupById(groupId);
     if (!g) return;
-    if (!confirm('確定要刪除組別「' + g.name + '」嗎？')) return;
-    groups = groups.filter(function (x) {
-      return x.id !== groupId;
+    showAppConfirm('確定要刪除組別「' + g.name + '」嗎？', {
+      title: "刪除組別",
+      confirmText: "刪除",
+      danger: true,
+    }).then(function (ok) {
+      if (!ok) return;
+      groups = groups.filter(function (x) {
+        return x.id !== groupId;
+      });
+      saveGroups();
+      renderGroupManageList();
+      renderGroupButtons();
     });
-    saveGroups();
-    renderGroupManageList();
-    renderGroupButtons();
   }
 
   function assignSlotToGroup(slotId) {
     if (!groups.length) {
-      alert("尚無組別，請先點「組別加分」旁的「管理」新增組別。");
+      showAppToast("尚無組別，請先點「組別加分」旁的「管理」新增組別。", {
+        variant: "warn",
+      });
       return;
     }
 
-    const lines = groups.map(function (g, idx) {
-      return idx + 1 + " = " + g.name + "（" + g.memberIds.length + " 人）";
+    const choices = groups.map(function (g, idx) {
+      return {
+        value: String(idx + 1),
+        label: g.name,
+        hint: "第 " + (idx + 1) + " 組 · " + g.memberIds.length + " 人",
+      };
     });
-    const menu =
-      "請選擇要加入/移除的組別：\n" +
-      lines.join("\n") +
-      "\n\n0 = 不加入任何組別\n" +
-      "（輸入組別編號；同組重複輸入會移除）";
-    const raw = prompt(menu, "1");
-    if (raw === null) return;
+    choices.push({
+      value: "0",
+      label: "不加入任何組別",
+      hint: "將此學生從所有組別移出",
+    });
 
-    const n = parseInt(raw, 10);
-    if (Number.isNaN(n) || n < 0 || n > groups.length) {
-      alert("請輸入有效編號。");
-      return;
-    }
+    showAppChoice(
+      "指定／變更組別",
+      slotId + " 號學生要加入哪一組？（若已在該組，再次選擇會移出）",
+      choices
+    ).then(function (raw) {
+      if (raw === null) return;
+      const n = parseInt(raw, 10);
+      if (Number.isNaN(n) || n < 0 || n > groups.length) {
+        showAppToast("請選擇有效組別。", { variant: "warn" });
+        return;
+      }
 
-    if (n === 0) {
-      groups.forEach(function (g) {
-        g.memberIds = g.memberIds.filter(function (id) {
-          return id !== slotId;
+      if (n === 0) {
+        groups.forEach(function (g) {
+          g.memberIds = g.memberIds.filter(function (id) {
+            return id !== slotId;
+          });
         });
+        saveGroups();
+        renderGroupButtons();
+        showAppToast(slotId + " 號已移出所有組別。", { variant: "success" });
+        return;
+      }
+
+      const target = groups[n - 1];
+      if (target.memberIds.indexOf(slotId) < 0) {
+        target.memberIds.push(slotId);
+        saveGroups();
+        renderGroupButtons();
+        showAppToast(slotId + " 號已加入「" + target.name + "」。", {
+          variant: "success",
+        });
+        return;
+      }
+      target.memberIds = target.memberIds.filter(function (id) {
+        return id !== slotId;
       });
       saveGroups();
       renderGroupButtons();
-      alert(slotId + " 號已移出所有組別。");
-      return;
-    }
-
-    const target = groups[n - 1];
-    if (target.memberIds.indexOf(slotId) < 0) {
-      target.memberIds.push(slotId);
-      saveGroups();
-      renderGroupButtons();
-      alert(slotId + " 號已加入「" + target.name + "」。");
-      return;
-    }
-    target.memberIds = target.memberIds.filter(function (id) {
-      return id !== slotId;
+      showAppToast(slotId + " 號已從「" + target.name + "」移除。", {
+        variant: "success",
+      });
     });
-    saveGroups();
-    renderGroupButtons();
-    alert(slotId + " 號已從「" + target.name + "」移除。");
   }
 
   function closeGroupQuickScoreMenu() {
@@ -4134,41 +4415,10 @@
   }
 
   function confirmRedrawDailyMission() {
-    return new Promise(function (resolve) {
-      const modal = document.getElementById("mission-redraw-confirm-modal");
-      const yesBtn = document.getElementById("btn-mission-redraw-yes");
-      const noBtn = document.getElementById("btn-mission-redraw-no");
-      if (!modal || !yesBtn || !noBtn) {
-        resolve(window.confirm("是否要重新抽取任務？"));
-        return;
-      }
-
-      function finish(ok) {
-        modal.hidden = true;
-        document.body.classList.remove("mission-redraw-confirm-open");
-        yesBtn.removeEventListener("click", onYes);
-        noBtn.removeEventListener("click", onNo);
-        modal.removeEventListener("click", onBackdrop);
-        resolve(ok);
-      }
-
-      function onYes() {
-        finish(true);
-      }
-
-      function onNo() {
-        finish(false);
-      }
-
-      function onBackdrop(ev) {
-        if (ev.target === modal) finish(false);
-      }
-
-      modal.hidden = false;
-      document.body.classList.add("mission-redraw-confirm-open");
-      yesBtn.addEventListener("click", onYes);
-      noBtn.addEventListener("click", onNo);
-      modal.addEventListener("click", onBackdrop);
+    return showAppConfirm("是否要重新抽取任務？\n目前的任務進度將會重置。", {
+      title: "重新抽取任務",
+      confirmText: "重新抽取",
+      danger: true,
     });
   }
 
@@ -4243,7 +4493,7 @@
       return;
     }
     if (!missionReminderVisible) {
-      alert("請先抽取或開始今日任務後，再揀選任務。");
+      showAppToast("請先抽取或開始今日任務後，再揀選任務。", { variant: "warn" });
       return;
     }
     renderMissionPickList();
@@ -4936,12 +5186,17 @@
     const code = buildClassSaveCodeString();
     copyTextToClipboard(code)
       .then(function () {
-        alert(
-          "全班存檔碼已複製到剪貼簿！\n請貼到記事本或傳給自己保存，日後可在此還原。"
+        showAppToast(
+          "全班存檔碼已複製到剪貼簿！\n請貼到記事本或傳給自己保存，日後可在此還原。",
+          { variant: "success", duration: 3600 }
         );
       })
       .catch(function () {
-        prompt("無法自動複製，請手動全選並複製以下存檔碼：", code);
+        showAppPrompt("", code, {
+          title: "手動複製存檔碼",
+          multiline: true,
+          readonly: true,
+        });
       });
   }
 
@@ -4953,20 +5208,22 @@
     try {
       archive = parseClassSaveCodeString(raw);
     } catch (err) {
-      alert(err.message || "存檔碼無效。");
+      showAppToast(err.message || "存檔碼無效。", { variant: "warn" });
       return;
     }
-    const ok = confirm(
-      "還原將覆蓋目前瀏覽器中的全班分數、神獸與組別資料。\n確定要還原嗎？"
-    );
-    if (!ok) return;
-    try {
-      applyBackupArchive(archive);
-      if (input) input.value = "";
-      alert("全班資料已成功還原！");
-    } catch (err) {
-      alert(err.message || "還原失敗，請檢查存檔碼。");
-    }
+    showAppConfirm(
+      "還原將覆蓋目前瀏覽器中的全班分數、神獸與組別資料。\n確定要還原嗎？",
+      { title: "還原全班資料", confirmText: "還原", danger: true }
+    ).then(function (ok) {
+      if (!ok) return;
+      try {
+        applyBackupArchive(archive);
+        if (input) input.value = "";
+        showAppToast("全班資料已成功還原！", { variant: "success" });
+      } catch (err) {
+        showAppToast(err.message || "還原失敗，請檢查存檔碼。", { variant: "warn" });
+      }
+    });
   }
 
   function initDataBackupModule() {
@@ -5543,14 +5800,9 @@
     renderSlotElement(slot);
     closeAnimalPickModal();
     const label = ANIMAL_LABELS[animal] || animal;
-    alert(
-      "已將 " +
-        slot.id +
-        " 號「" +
-        slot.name +
-        "」的動物更改為「" +
-        label +
-        "」"
+    showAppToast(
+      "已將 " + slot.id + " 號「" + slot.name + "」的動物更改為「" + label + "」",
+      { variant: "success" }
     );
   }
 
@@ -5652,7 +5904,7 @@
 
   function ensureTeacherModeOn() {
     if (teacherMode) return true;
-    alert("請連擊兩下左上角「編輯模式」按鈕以開啟。");
+    showAppToast("請連擊兩下左上角「編輯模式」按鈕以開啟。", { variant: "warn" });
     return false;
   }
 
@@ -5682,54 +5934,53 @@
 
     if (teacherMode) {
       closeQuickScoreMenu();
-      const input = prompt(
-        "請輸入分數：\n" +
-          "• 輸入 +20 或 -20：在目前分數上加減\n" +
-          "• 只輸入數字（如 0）：直接設為該分數\n\n" +
-          "目前分數：" +
+      showAppPrompt(
+        "• 輸入 +20 或 -20：在目前分數上加減\n• 只輸入數字（如 0）：直接設為該分數\n\n目前分數：" +
           slot.score,
-        String(slot.score)
-      );
-      if (input === null) return;
-      const raw = input.trim();
-      if (!raw) return;
+        String(slot.score),
+        { title: slot.id + " 號分數調整", placeholder: "例如 +5 或 80" }
+      ).then(function (input) {
+        if (input === null) return;
+        const raw = input.trim();
+        if (!raw) return;
 
-      const oldScore = slot.score;
-      let newScore = oldScore;
+        const oldScore = slot.score;
+        let newScore = oldScore;
 
-      if (/^[+-]/.test(raw)) {
-        const change = parseInt(raw, 10);
-        if (Number.isNaN(change)) {
-          alert("請輸入有效的加減分數字。");
+        if (/^[+-]/.test(raw)) {
+          const change = parseInt(raw, 10);
+          if (Number.isNaN(change)) {
+            showAppToast("請輸入有效的加減分數字。", { variant: "warn" });
+            return;
+          }
+          if (change === 0) return;
+          newScore = clampScore(oldScore + change);
+        } else {
+          const target = parseInt(raw, 10);
+          if (Number.isNaN(target)) {
+            showAppToast("請輸入數字。", { variant: "warn" });
+            return;
+          }
+          newScore = clampScore(target);
+        }
+
+        const delta = newScore - oldScore;
+        if (delta === 0) {
+          saveSlots();
+          updateSlotPresentation(slot);
           return;
         }
-        if (change === 0) return;
-        newScore = clampScore(oldScore + change);
-      } else {
-        const target = parseInt(raw, 10);
-        if (Number.isNaN(target)) {
-          alert("請輸入數字。");
-          return;
-        }
-        newScore = clampScore(target);
-      }
 
-      const delta = newScore - oldScore;
-      if (delta === 0) {
+        pushScoreUndoSnapshot();
+        slot.score = newScore;
+
+        recordDailyScoreChange(delta);
         saveSlots();
         updateSlotPresentation(slot);
-        return;
-      }
-
-      pushScoreUndoSnapshot();
-      slot.score = newScore;
-
-      recordDailyScoreChange(delta);
-      saveSlots();
-      updateSlotPresentation(slot);
-      applyScoreReaction(slotId, delta);
-      playScoreDing();
-      showScoreToast(slot, delta);
+        applyScoreReaction(slotId, delta);
+        playScoreDing();
+        showScoreToast(slot, delta);
+      });
       return;
     }
     closeGroupQuickScoreMenu();
@@ -5753,40 +6004,43 @@
     const slot = getSlotById(slotId);
     if (!slot) return;
 
-    const menu =
-      slot.id +
-      " 號「" +
-      slot.name +
-      "」\n\n請輸入操作編號：\n" +
-      "1 = 修改學生姓名\n" +
-      "2 = 更改動物\n" +
-      "3 = 指定／變更組別";
+    showAppChoice(
+      slot.id + " 號「" + slot.name + "」",
+      "請選擇編輯操作：",
+      [
+        { value: "1", label: "修改學生姓名" },
+        { value: "2", label: "更改動物" },
+        { value: "3", label: "指定／變更組別" },
+      ]
+    ).then(function (choice) {
+      if (choice === null) return;
 
-    const choice = prompt(menu, "1");
-    if (choice === null) return;
+      if (choice.trim() === "1") {
+        const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
+        showAppPrompt("請輸入新的學生姓名：", defaultName, {
+          title: "修改學生姓名",
+        }).then(function (nameInput) {
+          if (nameInput === null) return;
+          slot.name = nameInput.trim() || DEFAULT_NAME;
+          saveSlots();
+          renderSlotElement(slot);
+          showAppToast("已更新為：「" + slot.name + "」", { variant: "success" });
+        });
+        return;
+      }
 
-    if (choice.trim() === "1") {
-      const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
-      const nameInput = prompt("請輸入新的學生姓名：", defaultName);
-      if (nameInput === null) return;
-      slot.name = nameInput.trim() || DEFAULT_NAME;
-      saveSlots();
-      renderSlotElement(slot);
-      alert("已更新為：「" + slot.name + "」");
-      return;
-    }
+      if (choice.trim() === "2") {
+        openAnimalPickModal(slot.id);
+        return;
+      }
 
-    if (choice.trim() === "2") {
-      openAnimalPickModal(slot.id);
-      return;
-    }
+      if (choice.trim() === "3") {
+        assignSlotToGroup(slot.id);
+        return;
+      }
 
-    if (choice.trim() === "3") {
-      assignSlotToGroup(slot.id);
-      return;
-    }
-
-    alert("無效的操作編號。");
+      showAppToast("無效的操作。", { variant: "warn" });
+    });
   }
 
   function onSlotCardClick(slotId) {
@@ -5821,32 +6075,37 @@
     }
 
     const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
-    const nameInput = prompt(
+    showAppPrompt(
       "請輸入 " + slot.id + " 號學生的中文姓名：",
-      defaultName
-    );
-    if (nameInput === null) return;
+      defaultName,
+      { title: "學生姓名" }
+    ).then(function (nameInput) {
+      if (nameInput === null) return;
 
-    const trimmed = nameInput.trim();
-    slot.name = trimmed || DEFAULT_NAME;
-    saveSlots();
-    renderSlotElement(slot);
-
-    const hatchInput = prompt(
-      slot.id +
-        " 號「" +
-        slot.name +
-        "」\n\n若要讓神獸破蛋而出，請輸入「孵化」：\n（取消或輸入其他文字則暫不孵化）"
-    );
-    if (hatchInput === null) return;
-
-    if (hatchInput.trim() === "孵化") {
-      slot.hatched = true;
+      const trimmed = nameInput.trim();
+      slot.name = trimmed || DEFAULT_NAME;
       saveSlots();
       renderSlotElement(slot);
-      playHatchSound();
-      alert("🎉 " + slot.id + " 號 " + slot.name + " 的神獸孵化成功！");
-    }
+
+      showAppPrompt(
+        "若要讓神獸破蛋而出，請輸入「孵化」。\n（取消或輸入其他文字則暫不孵化）",
+        "",
+        { title: slot.id + " 號「" + slot.name + "」孵化" }
+      ).then(function (hatchInput) {
+        if (hatchInput === null) return;
+
+        if (hatchInput.trim() === "孵化") {
+          slot.hatched = true;
+          saveSlots();
+          renderSlotElement(slot);
+          playHatchSound();
+          showAppToast(
+            "🎉 " + slot.id + " 號 " + slot.name + " 的神獸孵化成功！",
+            { variant: "success", duration: 3200 }
+          );
+        }
+      });
+    });
   }
 
   function onSlotClick(slotId) {
