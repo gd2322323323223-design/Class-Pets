@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>欣賞園地</title>
-  <link rel="stylesheet" href="style.css?v=77" />
+  <link rel="stylesheet" href="style.css?v=78" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v77</div>
+  <div class="build-version-badge" aria-label="版本號">v78</div>
 
   <div
     id="class-code-modal"
@@ -375,19 +375,30 @@
         <div id="group-members-score-btns" class="group-members-modal__score-btns"></div>
       </div>
       <div id="group-members-add-section" class="group-members-modal__add-section">
-        <p class="group-members-modal__add-label">加入學生</p>
-        <div class="group-members-modal__add-toolbar">
-          <button type="button" id="btn-group-members-add-all" class="tools-btn tools-btn--ghost">全選</button>
-          <button type="button" id="btn-group-members-add-none" class="tools-btn tools-btn--ghost">清除</button>
-        </div>
-        <ul id="group-members-add-list" class="group-members-add-list"></ul>
         <button
           type="button"
-          id="btn-group-members-add-confirm"
-          class="tools-btn tools-btn--primary group-members-modal__add-btn"
+          id="btn-group-members-add-toggle"
+          class="group-members-modal__add-toggle"
+          aria-expanded="false"
+          aria-controls="group-members-add-body"
         >
-          加入所選學生
+          <span>加入學生</span>
+          <span class="group-members-modal__add-chevron" aria-hidden="true">▼</span>
         </button>
+        <div id="group-members-add-body" class="group-members-modal__add-body" hidden>
+          <div class="group-members-modal__add-toolbar">
+            <button type="button" id="btn-group-members-add-all" class="tools-btn tools-btn--ghost">全選</button>
+            <button type="button" id="btn-group-members-add-none" class="tools-btn tools-btn--ghost">清除</button>
+          </div>
+          <ul id="group-members-add-list" class="group-members-add-list"></ul>
+          <button
+            type="button"
+            id="btn-group-members-add-confirm"
+            class="tools-btn tools-btn--primary group-members-modal__add-btn"
+          >
+            加入所選學生
+          </button>
+        </div>
       </div>
       <button
         type="button"
@@ -836,6 +847,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=77"></script>
+  <script src="script.js?v=78"></script>
 </body>
 </html>

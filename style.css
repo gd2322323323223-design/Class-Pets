@@ -2947,13 +2947,48 @@ body:not(.teacher-mode-active) .group-members-modal__add-section {
   display: none;
 }
 
-.group-members-modal__add-label {
-  margin: 0 0 0.55rem;
+.group-members-modal__add-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0 0 0.45rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(120, 53, 15, 0.28);
+  border-radius: 12px;
+  font-family: inherit;
   font-size: 0.98rem;
   font-weight: 900;
   letter-spacing: 0.05em;
   color: #78350f;
-  text-align: center;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.75);
+  transition: filter 0.15s ease, background 0.15s ease;
+}
+
+.group-members-modal__add-toggle:hover {
+  filter: brightness(1.03);
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.group-members-modal__add-toggle.is-open {
+  margin-bottom: 0.55rem;
+  border-color: rgba(180, 83, 9, 0.45);
+}
+
+.group-members-modal__add-chevron {
+  font-size: 0.72rem;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.group-members-modal__add-toggle.is-open .group-members-modal__add-chevron {
+  transform: rotate(180deg);
+}
+
+.group-members-modal__add-body[hidden] {
+  display: none;
 }
 
 .group-members-modal__add-toolbar {
@@ -2965,6 +3000,12 @@ body:not(.teacher-mode-active) .group-members-modal__add-section {
 .group-members-modal__add-toolbar .tools-btn {
   font-size: 0.95rem;
   padding: 0.5rem 0.8rem;
+}
+
+.group-members-modal__add-toolbar .tools-btn--ghost {
+  color: #111827;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(120, 53, 15, 0.28);
 }
 
 .group-members-add-list {

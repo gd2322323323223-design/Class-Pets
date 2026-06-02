@@ -3107,8 +3107,29 @@
         }
       });
     }
+    const btnMembersAddToggle = document.getElementById("btn-group-members-add-toggle");
+    if (btnMembersAddToggle) {
+      btnMembersAddToggle.addEventListener("click", toggleGroupMembersAddPanel);
+    }
 
     groupPanelInitialized = true;
+  }
+
+  function setGroupMembersAddPanelOpen(open) {
+    const toggle = document.getElementById("btn-group-members-add-toggle");
+    const body = document.getElementById("group-members-add-body");
+    if (!toggle || !body) return;
+    const isOpen = !!open;
+    toggle.classList.toggle("is-open", isOpen);
+    toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    body.hidden = !isOpen;
+  }
+
+  function toggleGroupMembersAddPanel() {
+    const toggle = document.getElementById("btn-group-members-add-toggle");
+    const body = document.getElementById("group-members-add-body");
+    if (!toggle || !body) return;
+    setGroupMembersAddPanelOpen(body.hidden);
   }
 
   function renderGroupButtons() {
@@ -3154,6 +3175,7 @@
     closeQuickScoreMenu();
     closeGroupQuickScoreMenu();
     activeGroupMembersModalId = groupId;
+    setGroupMembersAddPanelOpen(false);
     renderGroupMembersModal(groupId);
     const modal = document.getElementById("group-members-modal");
     if (modal) modal.hidden = false;
