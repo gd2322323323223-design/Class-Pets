@@ -2403,11 +2403,11 @@ body.teacher-mode-active .slot {
 
 .bulk-pick-modal__card,
 .timer-alarm-modal__card {
-  width: min(420px, 100%);
-  max-height: 85vh;
+  width: min(640px, 96vw);
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 1.25rem;
-  border-radius: 18px;
+  padding: 1.55rem 1.65rem;
+  border-radius: 20px;
   background: linear-gradient(165deg, #fffef9, #fef3c7);
   border: 2px solid rgba(212, 175, 55, 0.5);
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
@@ -2415,44 +2415,50 @@ body.teacher-mode-active .slot {
 
 .bulk-pick-modal__title,
 .timer-alarm-modal__title {
-  font-size: 1.15rem;
+  font-size: 1.42rem;
   font-weight: 900;
   color: #78350f;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .bulk-pick-modal__hint,
 .timer-alarm-modal__hint {
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   color: #92400e;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
+  line-height: 1.45;
 }
 
 .bulk-pick-modal__toolbar {
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.65rem;
+  gap: 0.55rem;
+  margin-bottom: 0.75rem;
+}
+
+.bulk-pick-modal__toolbar .tools-btn {
+  font-size: 0.95rem;
+  padding: 0.55rem 0.85rem;
 }
 
 .bulk-pick-list {
   list-style: none;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 0.35rem;
-  margin-bottom: 1rem;
-  max-height: 50vh;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+  max-height: 58vh;
   overflow-y: auto;
 }
 
 .bulk-pick-item {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 0.5rem;
-  border-radius: 10px;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
   border: 1px solid rgba(120, 53, 15, 0.2);
   background: rgba(255, 255, 255, 0.65);
-  font-size: 0.8rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: #1a1208;
   cursor: pointer;
@@ -2460,6 +2466,13 @@ body.teacher-mode-active .slot {
 
 .bulk-pick-item input {
   flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.bulk-pick-modal__actions .tools-btn {
+  font-size: 1rem;
+  padding: 0.65rem 1rem;
 }
 
 .bulk-pick-modal__actions {
@@ -2773,12 +2786,12 @@ body.teacher-mode-active .slot {
 }
 
 .group-members-modal__card {
-  width: min(92vw, 420px);
-  max-height: min(85vh, 560px);
+  width: min(640px, 96vw);
+  max-height: min(90vh, 780px);
   display: flex;
   flex-direction: column;
-  padding: 1.15rem 1.1rem 1rem;
-  border-radius: 16px;
+  padding: 1.5rem 1.45rem 1.2rem;
+  border-radius: 20px;
   background: linear-gradient(
     165deg,
     rgba(255, 253, 231, 0.98) 0%,
@@ -2789,16 +2802,16 @@ body.teacher-mode-active .slot {
 }
 
 .group-members-modal__title {
-  margin: 0 0 0.25rem;
-  font-size: 1.12rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.38rem;
   font-weight: 900;
   color: #78350f;
   text-align: center;
 }
 
 .group-members-modal__count {
-  margin: 0 0 0.65rem;
-  font-size: 0.78rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.96rem;
   font-weight: 700;
   color: rgba(120, 53, 15, 0.75);
   text-align: center;
@@ -2806,48 +2819,48 @@ body.teacher-mode-active .slot {
 
 .group-members-list {
   list-style: none;
-  margin: 0 0 0.65rem;
+  margin: 0 0 0.75rem;
   padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
-  max-height: min(42vh, 320px);
+  gap: 0.45rem;
+  max-height: min(32vh, 280px);
 }
 
 .group-members-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.45rem 0.55rem;
-  border-radius: 10px;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.72);
   border: 1px solid rgba(180, 83, 9, 0.28);
 }
 
 .group-members-item__info {
   min-width: 0;
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   font-weight: 800;
   color: #422006;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .group-members-item__score {
   display: block;
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: rgba(120, 53, 15, 0.7);
 }
 
 .group-members-item__remove {
   flex-shrink: 0;
-  padding: 0.28rem 0.5rem;
+  padding: 0.38rem 0.65rem;
   border: 1px solid rgba(185, 28, 28, 0.35);
-  border-radius: 8px;
+  border-radius: 10px;
   font-family: inherit;
-  font-size: 0.68rem;
+  font-size: 0.88rem;
   font-weight: 900;
   color: #991b1b;
   cursor: pointer;
@@ -2863,15 +2876,15 @@ body:not(.teacher-mode-active) .group-members-item__remove {
 }
 
 .group-members-modal__empty {
-  margin: 0 0 0.65rem;
-  padding: 0.65rem 0.5rem;
-  font-size: 0.82rem;
+  margin: 0 0 0.75rem;
+  padding: 0.75rem 0.6rem;
+  font-size: 0.96rem;
   font-weight: 700;
   line-height: 1.45;
   color: #92400e;
   text-align: center;
   background: rgba(255, 255, 255, 0.55);
-  border-radius: 10px;
+  border-radius: 12px;
   border: 1px dashed rgba(180, 83, 9, 0.35);
 }
 
@@ -2893,7 +2906,7 @@ body:not(.teacher-mode-active) .group-members-item__remove {
 }
 
 .group-members-modal__score-label {
-  font-size: 0.72rem;
+  font-size: 0.92rem;
   font-weight: 900;
   letter-spacing: 0.06em;
   color: #78350f;
@@ -2908,12 +2921,12 @@ body:not(.teacher-mode-active) .group-members-item__remove {
 }
 
 .group-members-modal__score-btn {
-  min-width: 2.4rem;
-  padding: 0.32rem 0.45rem;
-  border-radius: 8px;
+  min-width: 2.8rem;
+  padding: 0.42rem 0.6rem;
+  border-radius: 10px;
   border: 1px solid rgba(180, 83, 9, 0.4);
   font-family: inherit;
-  font-size: 0.76rem;
+  font-size: 0.95rem;
   font-weight: 900;
   color: #78350f;
   cursor: pointer;
@@ -2924,8 +2937,87 @@ body:not(.teacher-mode-active) .group-members-item__remove {
   filter: brightness(1.05);
 }
 
+.group-members-modal__add-section {
+  margin-bottom: 0.75rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed rgba(180, 83, 9, 0.28);
+}
+
+body:not(.teacher-mode-active) .group-members-modal__add-section {
+  display: none;
+}
+
+.group-members-modal__add-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.98rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #78350f;
+  text-align: center;
+}
+
+.group-members-modal__add-toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.55rem;
+}
+
+.group-members-modal__add-toolbar .tools-btn {
+  font-size: 0.95rem;
+  padding: 0.5rem 0.8rem;
+}
+
+.group-members-add-list {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.45rem;
+  margin: 0 0 0.65rem;
+  max-height: min(36vh, 300px);
+  overflow-y: auto;
+  padding: 0;
+}
+
+.group-members-add-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 12px;
+  border: 1px solid rgba(120, 53, 15, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #1a1208;
+  cursor: pointer;
+}
+
+.group-members-add-item input {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.group-members-modal__add-empty {
+  grid-column: 1 / -1;
+  padding: 0.65rem 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #92400e;
+  text-align: center;
+  list-style: none;
+}
+
+.group-members-modal__add-btn {
+  width: 100%;
+  font-size: 1rem;
+  padding: 0.65rem 1rem;
+}
+
 .group-members-modal__close {
   width: 100%;
+  font-size: 1rem;
+  padding: 0.65rem 1rem;
   color: #422006;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(120, 53, 15, 0.28);

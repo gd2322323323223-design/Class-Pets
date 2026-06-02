@@ -3083,6 +3083,30 @@
         if (ev.target === membersModal) closeGroupMembersModal();
       });
     }
+    const btnMembersAddAll = document.getElementById("btn-group-members-add-all");
+    if (btnMembersAddAll) {
+      btnMembersAddAll.addEventListener("click", function () {
+        document.querySelectorAll(".group-members-add-check").forEach(function (el) {
+          el.checked = true;
+        });
+      });
+    }
+    const btnMembersAddNone = document.getElementById("btn-group-members-add-none");
+    if (btnMembersAddNone) {
+      btnMembersAddNone.addEventListener("click", function () {
+        document.querySelectorAll(".group-members-add-check").forEach(function (el) {
+          el.checked = false;
+        });
+      });
+    }
+    const btnMembersAddConfirm = document.getElementById("btn-group-members-add-confirm");
+    if (btnMembersAddConfirm) {
+      btnMembersAddConfirm.addEventListener("click", function () {
+        if (activeGroupMembersModalId !== null) {
+          confirmAddMembersToGroup(activeGroupMembersModalId);
+        }
+      });
+    }
 
     groupPanelInitialized = true;
   }
@@ -3225,6 +3249,73 @@
         scoreBtns.appendChild(customBtn);
       }
     }
+
+    renderGroupMembersAddList(groupId);
+  }
+
+  function renderGroupMembersAddList(groupId) {
+    const group = getGroupById(groupId);
+    const listEl = document.getElementById("group-members-add-list");
+    if (!group || !listEl) return;
+
+    listEl.innerHTML = "";
+    const available = slots.filter(function (slot) {
+      return group.memberIds.indexOf(slot.id) < 0;
+    });
+
+    if (!available.length) {
+      const li = document.createElement("li");
+      li.className = "group-members-modal__add-empty";
+      li.textContent = "所有學生都已在這個組別內";
+      listEl.appendChild(li);
+      return;
+    }
+
+    available.forEach(function (slot) {
+      const li = document.createElement("li");
+      li.className = "group-members-add-item";
+      li.innerHTML =
+        '<input type="checkbox" class="group-members-add-check" data-slot-id="' +
+        slot.id +
+        '" />' +
+        "<span>" +
+        slotDisplayLabel(slot) +
+        "</span>";
+      const input = li.querySelector(".group-members-add-check");
+      li.addEventListener("click", function (ev) {
+        if (ev.target === input) return;
+        input.checked = !input.checked;
+      });
+      listEl.appendChild(li);
+    });
+  }
+
+  function getGroupMembersAddSelectedIds() {
+    const ids = [];
+    document.querySelectorAll(".group-members-add-check:checked").forEach(function (el) {
+      const id = parseInt(el.getAttribute("data-slot-id"), 10);
+      if (Number.isFinite(id)) ids.push(id);
+    });
+    return ids;
+  }
+
+  function confirmAddMembersToGroup(groupId) {
+    if (!ensureTeacherModeOn()) return;
+    const group = getGroupById(groupId);
+    if (!group) return;
+    const selectedIds = getGroupMembersAddSelectedIds();
+    if (!selectedIds.length) {
+      alert("請至少選擇一位學生。");
+      return;
+    }
+    selectedIds.forEach(function (slotId) {
+      if (group.memberIds.indexOf(slotId) < 0) {
+        group.memberIds.push(slotId);
+      }
+    });
+    saveGroups();
+    renderGroupButtons();
+    renderGroupMembersModal(groupId);
   }
 
   function removeMemberFromGroup(groupId, slotId) {
