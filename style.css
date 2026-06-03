@@ -5183,7 +5183,7 @@ body:not(.teacher-mode-active) .mission-reminder-hud__pick-btn {
 
 .animal-pick-modal__title {
   margin: 0 0 0.35rem;
-  font-size: 1.15rem;
+  font-size: clamp(1.12rem, 2.6vw, 1.32rem);
   font-weight: 900;
   color: #065f46;
   text-align: center;
@@ -5191,7 +5191,7 @@ body:not(.teacher-mode-active) .mission-reminder-hud__pick-btn {
 
 .animal-pick-modal__hint {
   margin: 0 0 0.75rem;
-  font-size: 0.82rem;
+  font-size: clamp(1.12rem, 2.6vw, 1.32rem);
   font-weight: 700;
   color: #047857;
   text-align: center;
@@ -5215,7 +5215,7 @@ body:not(.teacher-mode-active) .mission-reminder-hud__pick-btn {
   border-radius: 10px;
   text-align: center;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: clamp(1.12rem, 2.6vw, 1.32rem);
   font-weight: 800;
   color: #065f46;
   cursor: pointer;

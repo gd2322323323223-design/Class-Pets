@@ -37,6 +37,7 @@
   const SCORE_MAX = 999;
   const LIVES_MAX = 3;
   const LIVES_DEFAULT = 3;
+  const HATCH_THRESHOLD = 20;
   const CLASS_PROGRESS_TIER_SIZE = 500;
   const CLASS_PROGRESS_META_KEY = "classroom-class-progress-meta-v1";
   const DAILY_SCORE_STORAGE_KEY = "classroom-daily-score-log-v1";
@@ -595,6 +596,9 @@
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, id),
         history: normalizeScoreHistory(s.history),
       };
+    }).map(function (slot) {
+      fixLegacySlotAnimal(slot);
+      return slot;
     });
   }
 
@@ -1743,6 +1747,14 @@
     return ANIMALS[(id - 1) % ANIMALS.length];
   }
 
+  /** 修正舊版錯誤預設（1 號應為河狸） */
+  function fixLegacySlotAnimal(slot) {
+    if (!slot) return;
+    if (slot.id === 1 && slot.animal === "polar") {
+      slot.animal = "beaver";
+    }
+  }
+
   function isValidAnimal(name) {
     return ANIMALS.indexOf(name) >= 0;
   }
@@ -1775,6 +1787,51 @@
   function clampLives(v) {
     const n = Number.isFinite(v) ? Math.floor(v) : LIVES_DEFAULT;
     return Math.max(0, Math.min(LIVES_MAX, n));
+  }
+
+  function isSlotSleeping(slot) {
+    if (!slot) return false;
+    if (typeof slot.lives !== "number") {
+      slot.lives = LIVES_DEFAULT;
+    }
+    return slot.lives === 0;
+  }
+
+  /** 睡眠中（0 愛心）不接受加分；減分仍可套用 */
+  function canApplyScoreDeltaToSlot(slot, delta) {
+    if (!slot || !delta) return false;
+    if (delta > 0 && isSlotSleeping(slot)) return false;
+    return true;
+  }
+
+  function slotDisplayName(slot) {
+    if (!slot) return "";
+    return slot.name && slot.name !== DEFAULT_NAME
+      ? slot.name
+      : slot.id + " 號學生";
+  }
+
+  function maybeAutoHatchSlot(slot, opts) {
+    opts = opts || {};
+    if (!slot || slot.hatched) return false;
+    if (slot.score < HATCH_THRESHOLD) return false;
+    slot.hatched = true;
+    if (opts.withFeedback) {
+      playHatchSound();
+      showAppToast(
+        "🎉 " + slot.id + " 號 " + slotDisplayName(slot) + " 的神獸孵化成功！",
+        { variant: "success", duration: 3200 }
+      );
+    }
+    return true;
+  }
+
+  function syncAllSlotsAutoHatch() {
+    let changed = false;
+    slots.forEach(function (slot) {
+      if (maybeAutoHatchSlot(slot)) changed = true;
+    });
+    if (changed) saveSlots();
   }
 
   let activeGrowthJournalSlotId = null;
@@ -1815,10 +1872,11 @@
   }
 
   function applyScoreDeltaToSlot(slot, delta) {
-    if (!slot || !delta) return false;
+    if (!canApplyScoreDeltaToSlot(slot, delta)) return false;
     slot.score = clampScore(slot.score + delta);
     applyScoreReaction(slot.id, delta);
     recordSlotScoreHistory(slot, delta);
+    if (delta > 0) maybeAutoHatchSlot(slot, { withFeedback: true });
     return true;
   }
 
@@ -3491,8 +3549,12 @@
       }
     });
     if (!applied) {
-      showAppToast("找不到已揀選的學生資料，請重新揀選。", { variant: "warn" });
-      cancelBulkPick();
+      if (delta > 0) {
+        showAppToast("所選學生均在睡眠中，無法加分。", { variant: "warn" });
+      } else {
+        showAppToast("找不到已揀選的學生資料，請重新揀選。", { variant: "warn" });
+        cancelBulkPick();
+      }
       return;
     }
 
@@ -3519,7 +3581,10 @@
 
     bulkSelectedIds.forEach(function (id) {
       const slot = getSlotById(id);
-      if (slot) updateSlotPresentation(slot);
+      if (slot) {
+        if (slot.hatched) renderSlotElement(slot);
+        else updateSlotPresentation(slot);
+      }
     });
     renderGroupButtons();
     updateBulkPickUI();
@@ -4309,13 +4374,22 @@
         memberCount += 1;
       }
     });
-    if (memberCount > 0 && delta !== 0) {
+    if (!memberCount) {
+      if (delta > 0) {
+        showAppToast("組別成員均在睡眠中，無法加分。", { variant: "warn" });
+      }
+      return;
+    }
+    if (delta !== 0) {
       recordDailyScoreChange(delta * memberCount);
     }
     saveSlots();
     group.memberIds.forEach(function (id) {
       const s = getSlotById(id);
-      if (s) updateSlotPresentation(s);
+      if (s) {
+        if (s.hatched) renderSlotElement(s);
+        else updateSlotPresentation(s);
+      }
     });
     playScoreDing();
     showGroupScoreToast(group, delta);
@@ -4460,13 +4534,21 @@
       }
     });
 
-    if (!applied) return;
+    if (!applied) {
+      if (delta > 0) {
+        showAppToast("中選學生均在睡眠中，無法加分。", { variant: "warn" });
+      }
+      return;
+    }
 
     recordDailyScoreChange(delta * applied);
     saveSlots();
     luckyDrawWinnerIds.forEach(function (id) {
       const slot = getSlotById(id);
-      if (slot) updateSlotPresentation(slot);
+      if (slot) {
+        if (slot.hatched) renderSlotElement(slot);
+        else updateSlotPresentation(slot);
+      }
     });
     playScoreDing();
 
@@ -5187,15 +5269,18 @@
   function grantClassMissionBonus(bonus, options) {
     const opts = options || {};
     if (bonus) pushScoreUndoSnapshot();
+    let applied = 0;
     slots.forEach(function (s) {
-      applyScoreDeltaToSlot(s, bonus);
+      if (applyScoreDeltaToSlot(s, bonus)) applied += 1;
     });
-    recordDailyScoreChange(bonus * SLOT_COUNT);
+    if (applied && bonus) {
+      recordDailyScoreChange(bonus * applied);
+    }
     saveSlots();
-    slots.forEach(updateSlotPresentation);
-    if (opts.withFeedback && bonus) {
+    slots.forEach(renderSlotElement);
+    if (opts.withFeedback && bonus && applied) {
       playScoreDing();
-      showBulkScoreToast(SLOT_COUNT, bonus);
+      showBulkScoreToast(applied, bonus);
     }
   }
 
@@ -5929,7 +6014,7 @@
       "aria-label",
       slot.hatched
         ? slot.id + " 號，點擊進入「" + name + "」的神獸內頁"
-        : slot.id + " 號，點擊命名或孵化"
+        : slot.id + " 號，點擊命名（滿 " + HATCH_THRESHOLD + " 分自動孵化）"
     );
 
     numEl.onclick = function (ev) {
@@ -5976,28 +6061,6 @@
     clearSlotStageInteractivity(stage);
     bindSlotNumNav(el, slot);
     bindSlotStageAnimalPick(stage, slot);
-  }
-
-  function ensureSlotTeacherTools(el, slot) {
-    const tools = el.querySelector(".slot__teacher-tools");
-    if (!tools) return;
-
-    let btn = tools.querySelector(".slot__teacher-btn--egg-toggle");
-    if (!btn) {
-      tools.innerHTML =
-        '<button type="button" class="slot__teacher-btn slot__teacher-btn--egg-toggle">🥚</button>';
-      btn = tools.querySelector(".slot__teacher-btn--egg-toggle");
-    }
-
-    if (!btn) return;
-    btn.textContent = "🥚";
-    btn.title = slot.hatched ? "點擊變回蛋" : "點擊孵化";
-    btn.setAttribute("aria-label", slot.hatched ? "變回蛋" : "孵化");
-    btn.onclick = function (ev) {
-      ev.stopPropagation();
-      ev.preventDefault();
-      toggleSlotHatchEgg(slot.id);
-    };
   }
 
   function getSlotStageKey(slot) {
@@ -6076,8 +6139,13 @@
       return;
     }
 
+    const wasHatched = el.classList.contains("is-hatched");
     el.classList.toggle("is-hatched", slot.hatched);
     el.classList.toggle("is-sleeping", slot.lives === 0);
+    if (wasHatched !== slot.hatched) {
+      renderSlotStage(el.querySelector(".slot__stage"), slot);
+      updateSlotNavInteractable(el, slot);
+    }
 
     const footerEmoji = el.querySelector(".slot__footer-part--emoji");
     const footerName = el.querySelector(".slot__footer-part--name");
@@ -6114,7 +6182,6 @@
         if (ev.target.closest(".slot__history-btn")) return;
         if (
           ev.target.closest(".slot__footer") ||
-          ev.target.closest(".slot__teacher-tools") ||
           ev.target.closest(".slot__lives") ||
           ev.target.closest(".score-quick-menu")
         ) {
@@ -6126,9 +6193,6 @@
       el.innerHTML =
         '<button type="button" class="slot__num"></button>' +
         '<button type="button" class="slot__history-btn" title="成長日誌" aria-label="查看得分成長日誌">📜</button>' +
-        '<div class="slot__teacher-tools">' +
-        '  <button type="button" class="slot__teacher-btn slot__teacher-btn--egg-toggle" title="孵化／變回蛋" aria-label="孵化／變回蛋">🥚</button>' +
-        "</div>" +
         '<div class="slot__stage"></div>' +
         '<div class="slot__lives" aria-label="生命值"></div>' +
         '<div class="slot__footer">' +
@@ -6158,8 +6222,6 @@
     const footerName = el.querySelector(".slot__footer-part--name");
     const footerScore = el.querySelector(".slot__footer-part--score");
     const quickMenu = el.querySelector(".score-quick-menu");
-
-    ensureSlotTeacherTools(el, slot);
 
     if (footerEmoji) {
       footerEmoji.textContent = slot.emoji || DEFAULT_EMOJI;
@@ -6218,6 +6280,12 @@
   function applyQuickScore(slotId, delta) {
     const slot = getSlotById(slotId);
     if (!slot || !delta) return;
+    if (!canApplyScoreDeltaToSlot(slot, delta)) {
+      if (delta > 0 && isSlotSleeping(slot)) {
+        showAppToast(slot.id + " 號正在睡眠中，無法加分。", { variant: "warn" });
+      }
+      return;
+    }
     pushScoreUndoSnapshot();
     applyScoreDeltaToSlot(slot, delta);
     if (delta !== 0) {
@@ -6225,7 +6293,8 @@
     }
     saveSlots();
     activeScoreMenuSlotId = null;
-    updateSlotPresentation(slot);
+    if (slot.hatched) renderSlotElement(slot);
+    else updateSlotPresentation(slot);
     playScoreDing();
     showScoreToast(slot, delta);
   }
@@ -6302,22 +6371,6 @@
     }
   }
 
-  function toggleSlotHatchEgg(slotId) {
-    if (!teacherMode && !ensureTeacherModeOn()) return;
-    const slot = getSlotById(slotId);
-    if (!slot) return;
-    if (slot.hatched) {
-      slot.hatched = false;
-      saveSlots();
-      renderSlotElement(slot);
-      return;
-    }
-    slot.hatched = true;
-    saveSlots();
-    renderSlotElement(slot);
-    playHatchSound();
-  }
-
   function refreshTeacherModeUI() {
     document.body.classList.toggle("teacher-mode-active", teacherMode);
     if (btnTeacherMode) {
@@ -6342,10 +6395,7 @@
     syncAllQuickScoreMenus();
     slots.forEach(function (slot) {
       const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
-      if (el) {
-        ensureSlotTeacherTools(el, slot);
-        updateSlotNavInteractable(el, slot);
-      }
+      if (el) updateSlotNavInteractable(el, slot);
     });
   }
 
@@ -6418,14 +6468,19 @@
           return;
         }
 
-        pushScoreUndoSnapshot();
-        slot.score = newScore;
-        recordSlotScoreHistory(slot, delta);
+        if (!canApplyScoreDeltaToSlot(slot, delta)) {
+          if (delta > 0 && isSlotSleeping(slot)) {
+            showAppToast(slot.id + " 號正在睡眠中，無法加分。", { variant: "warn" });
+          }
+          return;
+        }
 
+        pushScoreUndoSnapshot();
+        applyScoreDeltaToSlot(slot, delta);
         recordDailyScoreChange(delta);
         saveSlots();
-        updateSlotPresentation(slot);
-        applyScoreReaction(slotId, delta);
+        if (slot.hatched) renderSlotElement(slot);
+        else updateSlotPresentation(slot);
         playScoreDing();
         showScoreToast(slot, delta);
       });
@@ -6524,7 +6579,7 @@
 
     const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
     showAppPrompt(
-      "請輸入 " + slot.id + " 號學生的中文姓名：",
+      "請輸入 " + slot.id + " 號學生的中文姓名：\n（達到 " + HATCH_THRESHOLD + " 分將自動孵化）",
       defaultName,
       { title: "學生姓名" }
     ).then(function (nameInput) {
@@ -6534,25 +6589,6 @@
       slot.name = trimmed || DEFAULT_NAME;
       saveSlots();
       renderSlotElement(slot);
-
-      showAppPrompt(
-        "若要讓神獸破蛋而出，請輸入「孵化」。\n（取消或輸入其他文字則暫不孵化）",
-        "",
-        { title: slot.id + " 號「" + slot.name + "」孵化" }
-      ).then(function (hatchInput) {
-        if (hatchInput === null) return;
-
-        if (hatchInput.trim() === "孵化") {
-          slot.hatched = true;
-          saveSlots();
-          renderSlotElement(slot);
-          playHatchSound();
-          showAppToast(
-            "🎉 " + slot.id + " 號 " + slot.name + " 的神獸孵化成功！",
-            { variant: "success", duration: 3200 }
-          );
-        }
-      });
     });
   }
 
@@ -6589,6 +6625,8 @@
   function continueBoot() {
     showFileProtocolBanner();
     loadSlots();
+    slots.forEach(fixLegacySlotAnimal);
+    syncAllSlotsAutoHatch();
     loadGroups();
     loadClassProgressMeta();
     loadDailyScoreLog();
