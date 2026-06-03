@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=82" />
+  <link rel="stylesheet" href="style.css?v=83" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v82</div>
+  <div class="build-version-badge" aria-label="版本號">v83</div>
 
   <div
     id="class-code-modal"
@@ -342,7 +342,10 @@
         </label>
         <div class="tools-panel__actions">
           <button type="button" id="btn-class-code-switch" class="tools-btn tools-btn--primary">
-            確定
+            切換班級
+          </button>
+          <button type="button" id="btn-class-code-reset" class="tools-btn tools-btn--ghost">
+            重置此班級為空白
           </button>
         </div>
         <p id="class-code-sync-status" class="class-code-sync-status">雲端：尚未連線</p>
@@ -987,6 +990,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=82"></script>
+  <script src="script.js?v=83"></script>
 </body>
 </html>

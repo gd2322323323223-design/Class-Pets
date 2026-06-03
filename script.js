@@ -529,6 +529,7 @@
   let appBootstrapped = false;
   let lastCloudWriteAt = 0;
   let classCodeModalCallback = null;
+  let connectGeneration = 0;
 
   function getDb() {
     return db || window.__firebaseDb || null;
@@ -724,6 +725,58 @@
     };
   }
 
+  /** 全新班級的空白雲端資料（不沿用記憶體或 localStorage） */
+  function buildFreshCloudData() {
+    return {
+      students: {
+        slots: createDefaultSlots().map(function (s) {
+          return {
+            id: s.id,
+            name: s.name,
+            hatched: !!s.hatched,
+            animal: s.animal,
+            score: clampScore(s.score),
+            lives: clampLives(s.lives),
+            beamHueBase: normalizeBeamHueBase(s.beamHueBase, s.id),
+            history: {},
+          };
+        }),
+        updatedAt: Date.now(),
+      },
+      groups: [],
+      classProgress: { celebratedThresholds: [] },
+      dailyScore: {
+        currentDate: todayDateKey(),
+        todayScore: 0,
+        history: [],
+      },
+      timerMinuteCue: "1",
+      mission: {
+        currentDailyMissionId: null,
+        missionReminderVisible: false,
+        dailyMissionDrawCommitted: false,
+        scoreKingMission: { active: false, sessionScore: 0 },
+      },
+      updatedAt: Date.now(),
+    };
+  }
+
+  function resetClassSwitchSessionState() {
+    scoreUndoStack = [];
+    bulkPickActive = false;
+    bulkSelectedIds = [];
+    bulkSuccessIds = [];
+    activeScoreMenuSlotId = null;
+    activeGroupScoreMenuId = null;
+    activeGroupMembersModalId = null;
+    closeBulkPickModal();
+    closeGroupMembersModal();
+    closeGroupManageModal();
+    closeGrowthJournalModal();
+    refreshScoreUndoButton();
+    updateBulkPickUI();
+  }
+
   function collectLegacyLocalPayload() {
     let hasAny = false;
     const payload = buildDefaultCloudData();
@@ -856,6 +909,26 @@
     cloudSyncTimerId = setTimeout(flushCloudSync, 180);
   }
 
+  function flushCloudSyncToCode(code) {
+    const db = getDb();
+    if (!db || !code) return Promise.resolve();
+    if (cloudSyncTimerId !== null) {
+      clearTimeout(cloudSyncTimerId);
+      cloudSyncTimerId = null;
+    }
+    const payload = buildCloudPayload();
+    lastCloudWriteAt = payload.updatedAt;
+    return db
+      .ref(code)
+      .update(payload)
+      .then(function () {
+        setCloudSyncStatus("雲端：已同步（" + code + "）", false);
+      })
+      .catch(function (err) {
+        console.warn("[Firebase] 同步至 " + code + " 失敗", err);
+      });
+  }
+
   function flushCloudSync() {
     cloudSyncTimerId = null;
     const db = getDb();
@@ -892,7 +965,7 @@
         const remoteTs = data && data.updatedAt ? data.updatedAt : 0;
         if (lastCloudWriteAt && remoteTs && remoteTs <= lastCloudWriteAt) return;
         cloudSyncSuspended = true;
-        applyCloudData(data || buildDefaultCloudData());
+        applyCloudData(data || buildFreshCloudData());
         cloudSyncSuspended = false;
       },
       function (err) {
@@ -959,7 +1032,8 @@
     }, 0);
   }
 
-  function connectToClassCode(rawCode, callback) {
+  function connectToClassCode(rawCode, callback, options) {
+    options = options || {};
     const db = getDb();
     if (!db) {
       showAppToast(window.__firebaseInitError || "Firebase 尚未初始化。", {
@@ -975,31 +1049,65 @@
       return;
     }
 
-    setCloudSyncStatus("雲端：正在連接 " + code + "…", false);
+    const previousCode = currentClassCode;
+    const explicitSwitch = !!options.explicitSwitch;
+    const isClassSwitch =
+      explicitSwitch ||
+      !!(previousCode && sanitizeClassCode(previousCode) !== code);
+
+    connectGeneration += 1;
+    const connectGen = connectGeneration;
+
+    if (cloudSyncTimerId !== null) {
+      clearTimeout(cloudSyncTimerId);
+      cloudSyncTimerId = null;
+    }
+    lastCloudWriteAt = 0;
+    cloudSyncSuspended = true;
     detachCloudListener();
 
-    const ref = db.ref(code);
-    ref
-      .once("value")
+    setCloudSyncStatus("雲端：正在連接 " + code + "…", false);
+
+    const savePrevious =
+      isClassSwitch && previousCode
+        ? flushCloudSyncToCode(previousCode)
+        : Promise.resolve();
+
+    savePrevious
+      .then(function () {
+        if (connectGen !== connectGeneration) {
+          return Promise.reject({ stale: true });
+        }
+        return db.ref(code).once("value");
+      })
       .then(function (snap) {
+        if (connectGen !== connectGeneration) {
+          return Promise.reject({ stale: true });
+        }
         let data = snap.val();
         if (!data || !data.students || !data.students.slots) {
-          const legacy = collectLegacyLocalPayload();
-          data = legacy || buildDefaultCloudData();
-          cloudSyncSuspended = true;
-          return ref.set(data).then(function () {
-            cloudSyncSuspended = false;
+          if (isClassSwitch) {
+            data = buildFreshCloudData();
+          } else {
+            const legacy = collectLegacyLocalPayload();
+            data = legacy || buildFreshCloudData();
+          }
+          return db.ref(code).set(data).then(function () {
             return data;
           });
         }
         return data;
       })
       .then(function (data) {
+        if (connectGen !== connectGeneration) return;
+
         currentClassCode = code;
         rememberClassCode(code);
         syncClassCodeInputs(code);
-        cloudSyncSuspended = true;
-        applyCloudData(data, { initial: true });
+        if (isClassSwitch) {
+          resetClassSwitchSessionState();
+        }
+        applyCloudData(data, { initial: true, classSwitch: isClassSwitch });
         cloudSyncSuspended = false;
         attachCloudListener(code);
         hideClassCodeModal();
@@ -1008,6 +1116,8 @@
         if (callback) callback(true);
       })
       .catch(function (err) {
+        if (err && err.stale) return;
+        cloudSyncSuspended = false;
         console.warn("[Firebase] 連線失敗", err);
         showClassCodeError("無法連接雲端，請確認 firebase-config.js 的 databaseURL 與網路。");
         setCloudSyncStatus("雲端連線失敗", true);
@@ -1044,7 +1154,69 @@
           updateClassProgress();
           syncMissionHudLayout();
         }
-      });
+      }, { explicitSwitch: true });
+    });
+  }
+
+  function onClassCodeResetClick() {
+    const input = document.getElementById("class-code-sidebar-input");
+    const code = sanitizeClassCode(
+      input && input.value ? input.value : currentClassCode
+    );
+    if (!code) {
+      showAppToast("請先輸入要重置的班級代碼。", { variant: "warn" });
+      return;
+    }
+    showAppConfirm(
+      "確定將「" +
+        code +
+        "」的雲端資料重置為空白班級？\n分數、姓名、組別將全部歸零，且無法復原。",
+      { title: "重置班級資料", confirmText: "重置", danger: true }
+    ).then(function (ok) {
+      if (!ok) return;
+      const db = getDb();
+      if (!db) {
+        showAppToast(window.__firebaseInitError || "Firebase 尚未初始化。", {
+          variant: "warn",
+        });
+        return;
+      }
+      connectGeneration += 1;
+      if (cloudSyncTimerId !== null) {
+        clearTimeout(cloudSyncTimerId);
+        cloudSyncTimerId = null;
+      }
+      lastCloudWriteAt = 0;
+      cloudSyncSuspended = true;
+      detachCloudListener();
+
+      const fresh = buildFreshCloudData();
+      db.ref(code)
+        .set(fresh)
+        .then(function () {
+          currentClassCode = code;
+          rememberClassCode(code);
+          syncClassCodeInputs(code);
+          resetClassSwitchSessionState();
+          applyCloudData(fresh, { initial: true, classSwitch: true });
+          cloudSyncSuspended = false;
+          attachCloudListener(code);
+          updateDashHeaderTitle();
+          setCloudSyncStatus("雲端：已重置（" + code + "）", false);
+          showAppToast("「" + code + "」已重置為空白班級。", { variant: "success" });
+          if (appBootstrapped) {
+            renderAll();
+            ensureGroupPanel();
+            renderGroupButtons();
+            updateClassProgress();
+            syncMissionHudLayout();
+          }
+        })
+        .catch(function (err) {
+          cloudSyncSuspended = false;
+          console.warn("[Firebase] 重置失敗", err);
+          showAppToast("重置失敗，請檢查網路或 Firebase 設定。", { variant: "warn" });
+        });
     });
   }
 
@@ -1329,9 +1501,11 @@
     const submitBtn = document.getElementById("btn-class-code-submit");
     const input = document.getElementById("class-code-input");
     const switchBtn = document.getElementById("btn-class-code-switch");
+    const resetBtn = document.getElementById("btn-class-code-reset");
 
     if (submitBtn) submitBtn.addEventListener("click", onClassCodeSubmit);
     if (switchBtn) switchBtn.addEventListener("click", onClassCodeSwitchClick);
+    if (resetBtn) resetBtn.addEventListener("click", onClassCodeResetClick);
     if (input) {
       input.addEventListener("keydown", function (ev) {
         if (ev.key === "Enter") {
