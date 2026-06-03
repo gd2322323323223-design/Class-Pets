@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=79" />
+  <link rel="stylesheet" href="style.css?v=80" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v79</div>
+  <div class="build-version-badge" aria-label="版本號">v80</div>
 
   <div
     id="class-code-modal"
@@ -432,6 +432,34 @@
       <div class="app-dialog-modal__actions app-dialog-modal__actions--single">
         <button type="button" id="btn-app-choice-cancel" class="tools-btn tools-btn--ghost">取消</button>
       </div>
+    </div>
+  </div>
+
+  <div
+    id="growth-journal-modal"
+    class="growth-journal-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="growth-journal-title"
+  >
+    <div class="growth-journal-modal__card modal-surface">
+      <button
+        type="button"
+        id="btn-growth-journal-close"
+        class="growth-journal-modal__close"
+        aria-label="關閉成長日誌"
+      >
+        ✕
+      </button>
+      <h2 id="growth-journal-title" class="growth-journal-modal__title">成長日誌</h2>
+      <p id="growth-journal-subtitle" class="growth-journal-modal__subtitle"></p>
+      <div
+        id="growth-journal-encourage"
+        class="growth-journal-modal__encourage growth-journal-modal__encourage--warm"
+      ></div>
+      <p class="growth-journal-modal__list-label">最近 7 天得分</p>
+      <ul id="growth-journal-list" class="growth-journal-list"></ul>
     </div>
   </div>
 
@@ -952,6 +980,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=79"></script>
+  <script src="script.js?v=80"></script>
 </body>
 </html>

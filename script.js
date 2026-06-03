@@ -46,6 +46,7 @@
   const SITE_ACCESS_PASSWORD = "2756";
   const SITE_ACCESS_SESSION_KEY = "classroom-site-access-ok-v1";
   const CLASS_CODE_STORAGE_KEY = "classroom-class-code-v1";
+  const GROWTH_JOURNAL_DAYS = 7;
 
   /** 23 種動物（與 models/animal-*.glb 檔名一致）：1~22 號依序對應前 22 種 */
   const ANIMALS = [
@@ -564,6 +565,7 @@
         score: clampScore(s.score),
         lives: clampLives(s.lives),
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, s.id),
+        history: normalizeScoreHistory(s.history),
       };
     });
   }
@@ -590,6 +592,7 @@
         lives:
           typeof s.lives === "number" ? clampLives(s.lives) : LIVES_DEFAULT,
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, id),
+        history: normalizeScoreHistory(s.history),
       };
     });
   }
@@ -1571,6 +1574,189 @@
     return Math.max(0, Math.min(LIVES_MAX, n));
   }
 
+  let activeGrowthJournalSlotId = null;
+
+  function getLocalDateKey(offsetDays) {
+    const d = new Date();
+    if (offsetDays) d.setDate(d.getDate() + offsetDays);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return y + "-" + m + "-" + day;
+  }
+
+  function normalizeScoreHistory(raw) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+    const out = {};
+    Object.keys(raw).forEach(function (key) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) return;
+      const v = parseInt(raw[key], 10);
+      if (Number.isFinite(v) && v !== 0) out[key] = v;
+    });
+    return out;
+  }
+
+  function ensureSlotHistory(slot) {
+    if (!slot.history || typeof slot.history !== "object") {
+      slot.history = {};
+    }
+    return slot.history;
+  }
+
+  function recordSlotScoreHistory(slot, delta) {
+    if (!slot || !delta) return;
+    const hist = ensureSlotHistory(slot);
+    const key = getLocalDateKey(0);
+    hist[key] = (hist[key] || 0) + Math.floor(delta);
+    if (hist[key] === 0) delete hist[key];
+  }
+
+  function applyScoreDeltaToSlot(slot, delta) {
+    if (!slot || !delta) return false;
+    slot.score = clampScore(slot.score + delta);
+    applyScoreReaction(slot.id, delta);
+    recordSlotScoreHistory(slot, delta);
+    return true;
+  }
+
+  function getLastJournalDateKeys() {
+    const keys = [];
+    for (let i = GROWTH_JOURNAL_DAYS - 1; i >= 0; i--) {
+      keys.push(getLocalDateKey(-i));
+    }
+    return keys;
+  }
+
+  function formatHistoryDelta(delta) {
+    return (delta > 0 ? "+" : "") + delta;
+  }
+
+  function formatJournalDateLabel(dateKey) {
+    const today = getLocalDateKey(0);
+    const yesterday = getLocalDateKey(-1);
+    if (dateKey === today) return "今天 · " + dateKey;
+    if (dateKey === yesterday) return "昨天 · " + dateKey;
+    return dateKey;
+  }
+
+  function buildGrowthEncouragement(slot) {
+    const hist = ensureSlotHistory(slot);
+    const today = hist[getLocalDateKey(0)] || 0;
+    const yesterday = hist[getLocalDateKey(-1)] || 0;
+
+    if (today > yesterday && yesterday > 0) {
+      const diff = today - yesterday;
+      const pct = Math.round((diff / yesterday) * 100);
+      return {
+        type: "success",
+        text:
+          "太棒了！你今天比昨天多拿了 " +
+          diff +
+          " 分，進步了 " +
+          pct +
+          "%！🚀",
+      };
+    }
+    if (today > 0 && yesterday <= 0) {
+      return {
+        type: "warm",
+        text: "今天已累積 " + today + " 分，繼續保持節奏，你超棒的！✨",
+      };
+    }
+    if (today > 0) {
+      return {
+        type: "warm",
+        text:
+          "今天得分 " +
+          today +
+          " 分。每一天的小步前進，都會累積成大進步！🌱",
+      };
+    }
+    return {
+      type: "warm",
+      text: "歡迎記錄你的每一天！有加分就會出現在這裡，繼續加油！💪",
+    };
+  }
+
+  function renderGrowthJournalModal(slotId) {
+    const slot = getSlotById(slotId);
+    const titleEl = document.getElementById("growth-journal-title");
+    const subtitleEl = document.getElementById("growth-journal-subtitle");
+    const encourageEl = document.getElementById("growth-journal-encourage");
+    const listEl = document.getElementById("growth-journal-list");
+    if (!slot || !titleEl || !listEl) return;
+
+    titleEl.textContent = "📜 成長日誌";
+    if (subtitleEl) {
+      subtitleEl.textContent =
+        slotDisplayLabel(slot) + " · 目前總分 " + slot.score;
+    }
+
+    if (encourageEl) {
+      const msg = buildGrowthEncouragement(slot);
+      encourageEl.textContent = msg.text;
+      encourageEl.className =
+        "growth-journal-modal__encourage growth-journal-modal__encourage--" +
+        msg.type;
+    }
+
+    const hist = ensureSlotHistory(slot);
+    listEl.innerHTML = "";
+    getLastJournalDateKeys()
+      .slice()
+      .reverse()
+      .forEach(function (dateKey) {
+        const delta = hist[dateKey];
+        const li = document.createElement("li");
+        li.className = "growth-journal-item";
+        if (typeof delta === "number") {
+          li.classList.add(delta > 0 ? "is-positive" : "is-negative");
+        } else {
+          li.classList.add("is-empty");
+        }
+        li.innerHTML =
+          '<span class="growth-journal-item__date">' +
+          formatJournalDateLabel(dateKey) +
+          "</span>" +
+          '<span class="growth-journal-item__score">' +
+          (typeof delta === "number" ? formatHistoryDelta(delta) + " 分" : "—") +
+          "</span>";
+        listEl.appendChild(li);
+      });
+  }
+
+  function openGrowthJournalModal(slotId) {
+    const modal = document.getElementById("growth-journal-modal");
+    if (!modal) return;
+    activeGrowthJournalSlotId = slotId;
+    renderGrowthJournalModal(slotId);
+    modal.hidden = false;
+    document.body.classList.add("growth-journal-open");
+  }
+
+  function closeGrowthJournalModal() {
+    const modal = document.getElementById("growth-journal-modal");
+    if (modal) modal.hidden = true;
+    document.body.classList.remove("growth-journal-open");
+    activeGrowthJournalSlotId = null;
+  }
+
+  function initGrowthJournalModal() {
+    const modal = document.getElementById("growth-journal-modal");
+    const closeBtn = document.getElementById("btn-growth-journal-close");
+    if (closeBtn) closeBtn.addEventListener("click", closeGrowthJournalModal);
+    if (modal) {
+      modal.addEventListener("click", function (ev) {
+        if (ev.target === modal) closeGrowthJournalModal();
+      });
+    }
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape" && activeGrowthJournalSlotId !== null) {
+        closeGrowthJournalModal();
+      }
+    });
+  }
+
   function createDefaultSlots() {
     return Array.from({ length: SLOT_COUNT }, function (_, i) {
       const id = i + 1;
@@ -1583,6 +1769,7 @@
         score: 0,
         lives: LIVES_DEFAULT,
         beamHueBase: beamHueBaseForSlot(id),
+        history: {},
       };
     });
   }
@@ -3044,9 +3231,7 @@
     let applied = 0;
     bulkSelectedIds.forEach(function (id) {
       const s = getSlotById(id);
-      if (s) {
-        s.score = clampScore(s.score + delta);
-        applyScoreReaction(id, delta);
+      if (s && applyScoreDeltaToSlot(s, delta)) {
         applied += 1;
       }
     });
@@ -3865,9 +4050,7 @@
     let memberCount = 0;
     group.memberIds.forEach(function (id) {
       const s = getSlotById(id);
-      if (s) {
-        s.score = clampScore(s.score + delta);
-        applyScoreReaction(id, delta);
+      if (s && applyScoreDeltaToSlot(s, delta)) {
         memberCount += 1;
       }
     });
@@ -4017,10 +4200,9 @@
     let applied = 0;
     luckyDrawWinnerIds.forEach(function (id) {
       const slot = getSlotById(id);
-      if (!slot) return;
-      slot.score = clampScore(slot.score + delta);
-      applyScoreReaction(id, delta);
-      applied += 1;
+      if (slot && applyScoreDeltaToSlot(slot, delta)) {
+        applied += 1;
+      }
     });
 
     if (!applied) return;
@@ -4751,8 +4933,7 @@
     const opts = options || {};
     if (bonus) pushScoreUndoSnapshot();
     slots.forEach(function (s) {
-      s.score = clampScore(s.score + bonus);
-      if (bonus !== 0) applyScoreReaction(s.id, bonus);
+      applyScoreDeltaToSlot(s, bonus);
     });
     recordDailyScoreChange(bonus * SLOT_COUNT);
     saveSlots();
@@ -5675,6 +5856,7 @@
       el.addEventListener("click", function (ev) {
         if (ev.target.closest(".slot__stage")) return;
         if (ev.target.closest(".slot__num")) return;
+        if (ev.target.closest(".slot__history-btn")) return;
         if (
           ev.target.closest(".slot__footer") ||
           ev.target.closest(".slot__teacher-tools") ||
@@ -5688,6 +5870,7 @@
 
       el.innerHTML =
         '<button type="button" class="slot__num"></button>' +
+        '<button type="button" class="slot__history-btn" title="成長日誌" aria-label="查看得分成長日誌">📜</button>' +
         '<div class="slot__teacher-tools">' +
         '  <button type="button" class="slot__teacher-btn slot__teacher-btn--egg-toggle" title="孵化／變回蛋" aria-label="孵化／變回蛋">🥚</button>' +
         "</div>" +
@@ -5699,6 +5882,14 @@
         '  <button type="button" class="slot__footer-part slot__footer-part--score" aria-label="得分"></button>' +
         "</div>" +
         '<div class="score-quick-menu"></div>';
+
+      const historyBtn = el.querySelector(".slot__history-btn");
+      if (historyBtn) {
+        historyBtn.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          openGrowthJournalModal(slot.id);
+        });
+      }
 
       gridEl.appendChild(el);
     }
@@ -5773,14 +5964,13 @@
     const slot = getSlotById(slotId);
     if (!slot || !delta) return;
     pushScoreUndoSnapshot();
-    slot.score = clampScore(slot.score + delta);
+    applyScoreDeltaToSlot(slot, delta);
     if (delta !== 0) {
       recordDailyScoreChange(delta);
     }
     saveSlots();
     activeScoreMenuSlotId = null;
     updateSlotPresentation(slot);
-    applyScoreReaction(slotId, delta);
     playScoreDing();
     showScoreToast(slot, delta);
   }
@@ -5973,6 +6163,7 @@
 
         pushScoreUndoSnapshot();
         slot.score = newScore;
+        recordSlotScoreHistory(slot, delta);
 
         recordDailyScoreChange(delta);
         saveSlots();
@@ -6209,6 +6400,7 @@
     renderAll();
     ensureGroupPanel();
     initBulkUiBindings();
+    initGrowthJournalModal();
     renderGroupButtons();
     updateClassProgress();
     refreshScoreUndoButton();

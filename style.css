@@ -2382,6 +2382,153 @@ body.app-dialog-open {
   overflow: hidden;
 }
 
+body.growth-journal-open {
+  overflow: hidden;
+}
+
+/* 學生成長日誌 */
+.growth-journal-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 375;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(30, 20, 10, 0.48);
+  backdrop-filter: blur(4px);
+}
+
+.growth-journal-modal[hidden] {
+  display: none;
+}
+
+.growth-journal-modal__card {
+  position: relative;
+  width: min(560px, 96vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 1.5rem 1.55rem 1.35rem;
+  border-radius: 20px;
+  animation: luckyModalIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.growth-journal-modal__close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  border: 1px solid var(--wood-border);
+  border-radius: 10px;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  background: var(--modal-bg-soft);
+  color: var(--wood-text);
+}
+
+.growth-journal-modal__title {
+  margin: 0 2rem 0.35rem 0;
+  font-size: 1.45rem;
+  font-weight: 900;
+  color: var(--wood-text);
+}
+
+.growth-journal-modal__subtitle {
+  margin: 0 0 0.85rem;
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--wood-text-muted);
+}
+
+.growth-journal-modal__encourage {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  font-size: clamp(1.05rem, 3.5vw, 1.28rem);
+  font-weight: 900;
+  line-height: 1.45;
+  text-align: center;
+  border: 2px solid rgba(120, 53, 15, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--wood-text-muted);
+}
+
+.growth-journal-modal__encourage--success {
+  color: #15803d;
+  border-color: rgba(34, 197, 94, 0.45);
+  background: linear-gradient(
+    165deg,
+    rgba(220, 252, 231, 0.95) 0%,
+    rgba(187, 247, 208, 0.9) 100%
+  );
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+.growth-journal-modal__encourage--warm {
+  color: #92400e;
+  border-color: rgba(251, 191, 36, 0.4);
+  background: linear-gradient(
+    165deg,
+    rgba(255, 251, 235, 0.98) 0%,
+    rgba(254, 243, 199, 0.95) 100%
+  );
+}
+
+.growth-journal-modal__list-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--wood-text-soft);
+}
+
+.growth-journal-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+}
+
+.growth-journal-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--wood-border);
+  background: var(--modal-bg-soft);
+}
+
+.growth-journal-item__date {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1a1208;
+}
+
+.growth-journal-item__score {
+  font-size: 1.12rem;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.growth-journal-item.is-positive .growth-journal-item__score {
+  color: #15803d;
+}
+
+.growth-journal-item.is-negative .growth-journal-item__score {
+  color: #b91c1c;
+}
+
+.growth-journal-item.is-empty .growth-journal-item__score {
+  color: var(--wood-text-soft);
+  font-weight: 700;
+}
+
 /* 組別加分（位於 17、18 號格正下方） */
 .group-score-panel {
   grid-column: 5 / 7;
@@ -3475,6 +3622,33 @@ body.bulk-pick-active .slot {
 
 .slot__num:focus:not(:focus-visible) {
   outline: none;
+}
+
+.slot__history-btn {
+  position: absolute;
+  top: 0.42rem;
+  right: 0.45rem;
+  z-index: 4;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid rgba(120, 53, 15, 0.22);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  line-height: 1;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: filter 0.15s ease, transform 0.15s ease;
+}
+
+.slot__history-btn:hover {
+  filter: brightness(1.05);
+  transform: scale(1.04);
+}
+
+.slot__history-btn:active {
+  transform: scale(0.96);
 }
 
 .slot__viewer:focus,
