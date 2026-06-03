@@ -2409,7 +2409,17 @@ body.growth-journal-open {
   max-height: 88vh;
   overflow-y: auto;
   padding: 1.5rem 1.55rem 1.35rem;
-  border-radius: 20px;
+  border-radius: 22px;
+  background: linear-gradient(
+    165deg,
+    #fffbeb 0%,
+    #fef3c7 42%,
+    #fde68a 100%
+  );
+  border: 3px solid rgba(245, 158, 11, 0.55);
+  box-shadow:
+    0 22px 52px rgba(120, 53, 15, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
   animation: luckyModalIn 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -2443,15 +2453,15 @@ body.growth-journal-open {
 }
 
 .growth-journal-modal__encourage {
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.9rem;
   border-radius: 14px;
-  font-size: clamp(1.05rem, 3.5vw, 1.28rem);
+  font-size: clamp(1.12rem, 4vw, 1.35rem);
   font-weight: 900;
-  line-height: 1.45;
+  line-height: 1.4;
   text-align: center;
-  border: 2px solid rgba(120, 53, 15, 0.18);
-  background: rgba(255, 255, 255, 0.72);
+  border: 2px solid rgba(120, 53, 15, 0.15);
+  background: rgba(255, 255, 255, 0.92);
   color: var(--wood-text-muted);
 }
 
@@ -2476,57 +2486,104 @@ body.growth-journal-open {
   );
 }
 
-.growth-journal-modal__list-label {
-  margin: 0 0 0.55rem;
-  font-size: 0.92rem;
+.growth-journal-modal__chart-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  letter-spacing: 0.04em;
-  color: var(--wood-text-soft);
+  color: var(--wood-text-muted);
+  text-align: center;
 }
 
-.growth-journal-list {
-  list-style: none;
+.growth-journal-chart {
+  padding: 0.65rem 0.5rem 0.35rem;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.78);
+  border: 2px solid rgba(251, 191, 36, 0.35);
+}
+
+.growth-journal-chart__bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.35rem;
+  min-height: 9.5rem;
+  padding: 0.25rem 0.15rem 0;
+}
+
+.growth-journal-chart__col {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  margin: 0;
-  padding: 0;
-}
-
-.growth-journal-item {
-  display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.65rem 0.85rem;
-  border-radius: 12px;
-  border: 1px solid var(--wood-border);
-  background: var(--modal-bg-soft);
+  min-width: 0;
 }
 
-.growth-journal-item__date {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #1a1208;
+.growth-journal-chart__bar-wrap {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  width: 100%;
+  height: 7.5rem;
 }
 
-.growth-journal-item__score {
-  font-size: 1.12rem;
+.growth-journal-chart__bar {
+  position: relative;
+  width: min(100%, 2.35rem);
+  min-width: 1.35rem;
+  border-radius: 10px 10px 4px 4px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transition: height 0.25s ease;
+}
+
+.growth-journal-chart__bar.is-up {
+  background: linear-gradient(180deg, #86efac 0%, #22c55e 55%, #15803d 100%);
+  box-shadow: 0 4px 10px rgba(21, 128, 61, 0.35);
+}
+
+.growth-journal-chart__bar.is-down {
+  background: linear-gradient(180deg, #fca5a5 0%, #ef4444 55%, #b91c1c 100%);
+  box-shadow: 0 4px 10px rgba(185, 28, 28, 0.3);
+}
+
+.growth-journal-chart__bar.is-zero {
+  background: linear-gradient(180deg, #e5e7eb 0%, #d1d5db 100%);
+  box-shadow: none;
+}
+
+.growth-journal-chart__value {
+  position: absolute;
+  top: -1.35rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.78rem;
   font-weight: 900;
-  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: #1a1208;
+  text-shadow: 0 1px 0 #fff;
 }
 
-.growth-journal-item.is-positive .growth-journal-item__score {
-  color: #15803d;
+.growth-journal-chart__value--zero {
+  color: #9ca3af;
+  font-size: 0.72rem;
 }
 
-.growth-journal-item.is-negative .growth-journal-item__score {
-  color: #b91c1c;
+.growth-journal-chart__day {
+  margin-top: 0.4rem;
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--wood-text);
+  text-align: center;
+  line-height: 1.2;
 }
 
-.growth-journal-item.is-empty .growth-journal-item__score {
-  color: var(--wood-text-soft);
+.growth-journal-chart__legend {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
   font-weight: 700;
+  text-align: center;
+  color: var(--wood-text-soft);
 }
 
 /* 組別加分（位於 17、18 號格正下方） */

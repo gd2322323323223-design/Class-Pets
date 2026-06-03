@@ -1631,12 +1631,19 @@
     return (delta > 0 ? "+" : "") + delta;
   }
 
-  function formatJournalDateLabel(dateKey) {
+  function formatJournalDayShort(dateKey) {
     const today = getLocalDateKey(0);
     const yesterday = getLocalDateKey(-1);
-    if (dateKey === today) return "今天 · " + dateKey;
-    if (dateKey === yesterday) return "昨天 · " + dateKey;
-    return dateKey;
+    if (dateKey === today) return "今天";
+    if (dateKey === yesterday) return "昨天";
+    const parts = dateKey.split("-");
+    const d = new Date(
+      parseInt(parts[0], 10),
+      parseInt(parts[1], 10) - 1,
+      parseInt(parts[2], 10)
+    );
+    const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+    return "週" + weekdays[d.getDay()];
   }
 
   function buildGrowthEncouragement(slot) {
@@ -1649,33 +1656,99 @@
       const pct = Math.round((diff / yesterday) * 100);
       return {
         type: "success",
-        text:
-          "太棒了！你今天比昨天多拿了 " +
-          diff +
-          " 分，進步了 " +
-          pct +
-          "%！🚀",
+        text: "哇！比昨天多 " + diff + " 分，進步 " + pct + "%！🚀",
       };
     }
     if (today > 0 && yesterday <= 0) {
       return {
         type: "warm",
-        text: "今天已累積 " + today + " 分，繼續保持節奏，你超棒的！✨",
+        text: "今天 " + today + " 分，好厲害喔！✨",
       };
     }
     if (today > 0) {
       return {
         type: "warm",
-        text:
-          "今天得分 " +
-          today +
-          " 分。每一天的小步前進，都會累積成大進步！🌱",
+        text: "今天 " + today + " 分，明天會更棒！🌱",
       };
     }
     return {
       type: "warm",
-      text: "歡迎記錄你的每一天！有加分就會出現在這裡，繼續加油！💪",
+      text: "加油！得分會長高高～ 🌟",
     };
+  }
+
+  function renderGrowthJournalChart(slot) {
+    const chartEl = document.getElementById("growth-journal-chart");
+    if (!chartEl) return;
+
+    const hist = ensureSlotHistory(slot);
+    const keys = getLastJournalDateKeys();
+    let maxAbs = 1;
+    keys.forEach(function (dateKey) {
+      const v = hist[dateKey];
+      if (typeof v === "number") {
+        maxAbs = Math.max(maxAbs, Math.abs(v));
+      }
+    });
+
+    chartEl.innerHTML = "";
+    const barsWrap = document.createElement("div");
+    barsWrap.className = "growth-journal-chart__bars";
+    barsWrap.setAttribute("aria-hidden", "true");
+
+    keys.forEach(function (dateKey) {
+      const raw = hist[dateKey];
+      const score = typeof raw === "number" ? raw : 0;
+      const col = document.createElement("div");
+      col.className = "growth-journal-chart__col";
+
+      const barWrap = document.createElement("div");
+      barWrap.className = "growth-journal-chart__bar-wrap";
+
+      const bar = document.createElement("div");
+      bar.className = "growth-journal-chart__bar";
+      if (score > 0) {
+        bar.classList.add("is-up");
+        const heightPct = Math.max(14, (score / maxAbs) * 100);
+        bar.style.height = heightPct + "%";
+        const valueEl = document.createElement("span");
+        valueEl.className = "growth-journal-chart__value";
+        valueEl.textContent = "+" + score;
+        bar.appendChild(valueEl);
+      } else if (score < 0) {
+        bar.classList.add("is-down");
+        const heightPct = Math.max(14, (Math.abs(score) / maxAbs) * 100);
+        bar.style.height = heightPct + "%";
+        const valueEl = document.createElement("span");
+        valueEl.className = "growth-journal-chart__value";
+        valueEl.textContent = String(score);
+        bar.appendChild(valueEl);
+      } else {
+        bar.classList.add("is-zero");
+        bar.style.height = "12%";
+        const valueEl = document.createElement("span");
+        valueEl.className = "growth-journal-chart__value growth-journal-chart__value--zero";
+        valueEl.textContent = "0";
+        bar.appendChild(valueEl);
+      }
+
+      barWrap.appendChild(bar);
+
+      const dayEl = document.createElement("span");
+      dayEl.className = "growth-journal-chart__day";
+      dayEl.textContent = formatJournalDayShort(dateKey);
+
+      col.appendChild(barWrap);
+      col.appendChild(dayEl);
+      barsWrap.appendChild(col);
+    });
+
+    chartEl.appendChild(barsWrap);
+
+    const legend = document.createElement("p");
+    legend.className = "growth-journal-chart__legend";
+    legend.textContent = "🟢 綠色 = 加分　🔴 紅色 = 減分";
+    chartEl.appendChild(legend);
   }
 
   function renderGrowthJournalModal(slotId) {
@@ -1683,13 +1756,13 @@
     const titleEl = document.getElementById("growth-journal-title");
     const subtitleEl = document.getElementById("growth-journal-subtitle");
     const encourageEl = document.getElementById("growth-journal-encourage");
-    const listEl = document.getElementById("growth-journal-list");
-    if (!slot || !titleEl || !listEl) return;
+    const chartEl = document.getElementById("growth-journal-chart");
+    if (!slot || !titleEl || !chartEl) return;
 
     titleEl.textContent = "📜 成長日誌";
     if (subtitleEl) {
       subtitleEl.textContent =
-        slotDisplayLabel(slot) + " · 目前總分 " + slot.score;
+        slotDisplayLabel(slot) + " · 總分 " + slot.score;
     }
 
     if (encourageEl) {
@@ -1700,29 +1773,7 @@
         msg.type;
     }
 
-    const hist = ensureSlotHistory(slot);
-    listEl.innerHTML = "";
-    getLastJournalDateKeys()
-      .slice()
-      .reverse()
-      .forEach(function (dateKey) {
-        const delta = hist[dateKey];
-        const li = document.createElement("li");
-        li.className = "growth-journal-item";
-        if (typeof delta === "number") {
-          li.classList.add(delta > 0 ? "is-positive" : "is-negative");
-        } else {
-          li.classList.add("is-empty");
-        }
-        li.innerHTML =
-          '<span class="growth-journal-item__date">' +
-          formatJournalDateLabel(dateKey) +
-          "</span>" +
-          '<span class="growth-journal-item__score">' +
-          (typeof delta === "number" ? formatHistoryDelta(delta) + " 分" : "—") +
-          "</span>";
-        listEl.appendChild(li);
-      });
+    renderGrowthJournalChart(slot);
   }
 
   function openGrowthJournalModal(slotId) {
