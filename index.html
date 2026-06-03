@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=81" />
+  <link rel="stylesheet" href="style.css?v=82" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v81</div>
+  <div class="build-version-badge" aria-label="版本號">v82</div>
 
   <div
     id="class-code-modal"
@@ -453,12 +453,14 @@
         ✕
       </button>
       <h2 id="growth-journal-title" class="growth-journal-modal__title">成長日誌</h2>
-      <p id="growth-journal-subtitle" class="growth-journal-modal__subtitle"></p>
-      <div
-        id="growth-journal-encourage"
-        class="growth-journal-modal__encourage growth-journal-modal__encourage--warm"
-      ></div>
-      <p class="growth-journal-modal__chart-label">最近 7 天 · 看柱子就知道有沒有進步喔！</p>
+      <p id="growth-journal-subtitle" class="growth-journal-modal__student"></p>
+      <p class="growth-journal-modal__chart-head">
+        <span class="growth-journal-modal__chart-title">最近 7 天</span>
+        <span
+          id="growth-journal-encourage"
+          class="growth-journal-modal__encourage growth-journal-modal__encourage--warm"
+        ></span>
+      </p>
       <div
         id="growth-journal-chart"
         class="growth-journal-chart"
@@ -985,6 +987,6 @@
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=81"></script>
+  <script src="script.js?v=82"></script>
 </body>
 </html>

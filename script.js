@@ -1771,6 +1771,7 @@
       encourageEl.className =
         "growth-journal-modal__encourage growth-journal-modal__encourage--" +
         msg.type;
+      encourageEl.hidden = false;
     }
 
     renderGrowthJournalChart(slot);
