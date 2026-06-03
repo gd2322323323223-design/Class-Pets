@@ -1158,7 +1158,24 @@
     });
   }
 
+  function confirmSitePassword() {
+    return showAppPrompt("請輸入密碼以確認此操作。", "", {
+      title: "密碼確認",
+      password: true,
+      placeholder: "密碼",
+    }).then(function (val) {
+      if (val === null) return false;
+      if (val !== SITE_ACCESS_PASSWORD) {
+        showAppToast("密碼錯誤，無法執行此操作。", { variant: "warn" });
+        return false;
+      }
+      return true;
+    });
+  }
+
   function onClassCodeResetClick() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+
     const input = document.getElementById("class-code-sidebar-input");
     const code = sanitizeClassCode(
       input && input.value ? input.value : currentClassCode
@@ -1167,7 +1184,9 @@
       showAppToast("請先輸入要重置的班級代碼。", { variant: "warn" });
       return;
     }
-    showAppConfirm(
+    confirmSitePassword().then(function (passwordOk) {
+      if (!passwordOk) return;
+      return showAppConfirm(
       "確定將「" +
         code +
         "」的雲端資料重置為空白班級？\n分數、姓名、組別將全部歸零，且無法復原。",
@@ -1217,6 +1236,7 @@
           console.warn("[Firebase] 重置失敗", err);
           showAppToast("重置失敗，請檢查網路或 Firebase 設定。", { variant: "warn" });
         });
+    });
     });
   }
 
@@ -1346,6 +1366,15 @@
       fieldEl.readOnly = !!opts.readonly;
       if (opts.placeholder) fieldEl.placeholder = opts.placeholder;
       else fieldEl.removeAttribute("placeholder");
+      if (!useTextarea) {
+        if (opts.password) {
+          inputEl.type = "password";
+          inputEl.autocomplete = "current-password";
+        } else {
+          inputEl.type = "text";
+          inputEl.autocomplete = "off";
+        }
+      }
 
       okBtn.textContent = opts.readonly ? "關閉" : opts.confirmText || "確定";
       cancelBtn.hidden = !!opts.readonly;
@@ -6307,6 +6336,8 @@
     }
     updateBulkPickUI();
     refreshScoreUndoButton();
+    const resetBtn = document.getElementById("btn-class-code-reset");
+    if (resetBtn) resetBtn.hidden = !teacherMode;
     refreshMissionPickButton();
     syncAllQuickScoreMenus();
     slots.forEach(function (slot) {
@@ -6629,7 +6660,7 @@
     initGrowthJournalModal();
     renderGroupButtons();
     updateClassProgress();
-    refreshScoreUndoButton();
+    refreshTeacherModeUI();
     syncMissionHudLayout();
     startAnimationCycle();
   }
