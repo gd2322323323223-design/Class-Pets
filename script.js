@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "105";
+  const APP_BUILD_VERSION = "106";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
   const DEV_MODE_BADGE_CLICK_MS = 900;
@@ -539,7 +539,7 @@
     const badge = document.querySelector(".build-version-badge");
     if (!badge) return;
     badge.textContent = developerMode
-      ? "v" + APP_BUILD_VERSION + "·開發"
+      ? "v" + APP_BUILD_VERSION + "·"
       : "v" + APP_BUILD_VERSION;
     badge.classList.toggle("build-version-badge--dev", developerMode);
   }
@@ -585,6 +585,13 @@
     const badge = document.querySelector(".build-version-badge");
     if (!badge) return;
     badge.addEventListener("click", onBuildVersionBadgeClick);
+  }
+
+  function exitDeveloperMode() {
+    if (!developerMode) return;
+    developerMode = false;
+    refreshDeveloperModeUI();
+    syncDeveloperToolsVisibility();
   }
 
   function refreshDeveloperModeUI() {
@@ -1346,7 +1353,6 @@
   }
 
   function confirmSitePassword() {
-    if (developerMode) return Promise.resolve(true);
     return showAppPrompt("請輸入密碼以確認此操作。", "", {
       title: "密碼確認",
       password: true,
@@ -1424,7 +1430,6 @@
   let appToastTimeoutId = null;
 
   function showAppToast(message, opts) {
-    if (developerMode) return;
     opts = opts || {};
     const duration = opts.duration != null ? opts.duration : 2800;
     const toast = document.getElementById("app-toast");
@@ -1449,9 +1454,6 @@
 
   function showAppConfirm(message, opts) {
     opts = opts || {};
-    if (developerMode) {
-      return Promise.resolve(!!opts.devAutoOk);
-    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-confirm-modal");
       const card = modal ? modal.querySelector(".app-dialog-modal__card") : null;
@@ -1529,9 +1531,6 @@
 
   function showAppPrompt(message, defaultValue, opts) {
     opts = opts || {};
-    if (developerMode && !opts.allowInDeveloperMode) {
-      return Promise.resolve(null);
-    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-prompt-modal");
       const titleEl = document.getElementById("app-prompt-title");
@@ -1626,9 +1625,6 @@
   }
 
   function showAppChoice(title, message, choices) {
-    if (developerMode) {
-      return Promise.resolve(null);
-    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-choice-modal");
       const titleEl = document.getElementById("app-choice-title");
@@ -3925,7 +3921,7 @@
   }
 
   function showScoreToast(slot, delta) {
-    if (developerMode || !delta) return;
+    if (!delta) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -3954,7 +3950,7 @@
   }
 
   function showGroupScoreToast(group, delta) {
-    if (developerMode || !delta || !group) return;
+    if (!delta || !group) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -4163,7 +4159,6 @@
   }
 
   function showBulkScoreToast(count, delta) {
-    if (developerMode) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -7257,6 +7252,7 @@
   function closeTeacherMode() {
     if (!teacherMode) return;
     teacherMode = false;
+    exitDeveloperMode();
     closeMissionPickModal();
     closeAllQuickScoreMenus();
     refreshTeacherModeUI();
