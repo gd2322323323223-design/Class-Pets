@@ -189,7 +189,10 @@ body.class-code-open {
 
 .tools-panel--mission.tools-panel--collapsible,
 .tools-panel--lucky.tools-panel--collapsible,
-.tools-panel--timer.tools-panel--collapsible {
+.tools-panel--timer.tools-panel--collapsible,
+.tools-panel--backup.tools-panel--collapsible,
+.tools-panel--class-setup.tools-panel--collapsible,
+.tools-panel--class-code.tools-panel--collapsible {
   padding: 0;
 }
 
@@ -237,13 +240,19 @@ body.class-code-open {
 
 .tools-panel--mission .tools-panel__toggle,
 .tools-panel--lucky .tools-panel__toggle,
-.tools-panel--timer .tools-panel__toggle {
+.tools-panel--timer .tools-panel__toggle,
+.tools-panel--backup .tools-panel__toggle,
+.tools-panel--class-setup .tools-panel__toggle,
+.tools-panel--class-code .tools-panel__toggle {
   color: inherit;
 }
 
 .tools-panel--mission .tools-panel__toggle .tools-panel__title,
 .tools-panel--lucky .tools-panel__toggle .tools-panel__title,
-.tools-panel--timer .tools-panel__toggle .tools-panel__title {
+.tools-panel--timer .tools-panel__toggle .tools-panel__title,
+.tools-panel--backup .tools-panel__toggle .tools-panel__title,
+.tools-panel--class-setup .tools-panel__toggle .tools-panel__title,
+.tools-panel--class-code .tools-panel__toggle .tools-panel__title {
   color: inherit;
   -webkit-text-fill-color: inherit;
   border-bottom: none;
@@ -269,17 +278,11 @@ body.class-code-open {
 
 .tools-panel--mission .tools-panel__chevron,
 .tools-panel--lucky .tools-panel__chevron,
-.tools-panel--timer .tools-panel__chevron {
+.tools-panel--timer .tools-panel__chevron,
+.tools-panel--backup .tools-panel__chevron,
+.tools-panel--class-setup .tools-panel__chevron,
+.tools-panel--class-code .tools-panel__chevron {
   color: rgba(255, 255, 255, 0.78);
-}
-
-.tools-panel--backup .tools-panel__toggle .tools-panel__title {
-  color: #f5f3ff;
-  -webkit-text-fill-color: #f5f3ff;
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  text-shadow: 0 2px 6px rgba(76, 29, 149, 0.45);
 }
 
 .tools-panel__toggle {
@@ -597,13 +600,8 @@ body.tools-sidebar-open .tools-tab {
   color: #f5f3ff;
 }
 
-.tools-panel--backup .tools-panel__toggle .tools-panel__title {
-  color: #f5f3ff;
-  -webkit-text-fill-color: #f5f3ff;
-  border-bottom: none;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  text-shadow: 0 2px 6px rgba(76, 29, 149, 0.45);
+.tools-panel--class-setup .tools-panel__toggle {
+  color: #e0f2fe;
 }
 
 .tools-panel__title {
@@ -1086,6 +1084,56 @@ body.timer-expanded-open {
 
 .timer-mini-widget__alarm-close[hidden] {
   display: none;
+}
+
+.timer-widget-sound-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.55rem;
+}
+
+.timer-widget-sound-controls--expanded {
+  justify-content: center;
+  margin-top: 1.1rem;
+}
+
+.timer-widget-sound-btn {
+  flex: 1 1 calc(50% - 0.25rem);
+  min-width: 0;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid rgba(94, 234, 212, 0.4);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #ecfdf5;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+}
+
+.timer-widget-sound-btn:hover:not(:disabled) {
+  background: rgba(94, 234, 212, 0.2);
+  border-color: rgba(94, 234, 212, 0.55);
+}
+
+.timer-widget-sound-btn.is-on {
+  background: rgba(94, 234, 212, 0.22);
+  border-color: rgba(94, 234, 212, 0.55);
+}
+
+.timer-widget-sound-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.timer-widget-sound-controls--expanded .timer-widget-sound-btn {
+  flex: 0 1 auto;
+  min-width: 8.5rem;
+  font-size: 0.92rem;
+  padding: 0.62rem 0.85rem;
 }
 
 .timer-expanded-modal__alarm-close {

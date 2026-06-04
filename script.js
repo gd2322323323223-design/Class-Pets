@@ -4,11 +4,11 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "99";
+  const APP_BUILD_VERSION = "100";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
-  const TIMER_MINUTE_CUE_STORAGE_KEY = "classroom-dashboard-timer-minute-cue-v1";
+  const TIMER_SETTINGS_STORAGE_KEY = "classroom-dashboard-timer-settings-v2";
   const DEFAULT_SLOT_COUNT = 22;
   const MIN_SLOT_COUNT = 1;
   const MAX_SLOT_COUNT = 40;
@@ -169,10 +169,10 @@
   let timerAlarmActive = false;
   let timerAlarmAudio = null;
   let timerAlarmIntervalId = null;
-  let countdownInitialMs = 0;
-  let countdownMinuteThresholds = [];
-  let countdownMinuteCuesPlayed = [];
-  let timerMinuteCueEnabled = true;
+  let countdownSessionInitialMs = 0;
+  let timerIntervalCueMarks = 0;
+  let timerSoundEnabled = true;
+  let timerIntervalCueSec = 60;
   let timerExpanded = false;
   let timerMiniVisible = false;
   let timerMiniUserMoved = false;
@@ -779,7 +779,8 @@
         todayScore: 0,
         history: [],
       },
-      timerMinuteCue: "1",
+      timerSound: "1",
+      timerIntervalCue: "60",
       mission: {
         currentDailyMissionId: null,
         missionReminderVisible: false,
@@ -818,7 +819,8 @@
         todayScore: 0,
         history: [],
       },
-      timerMinuteCue: "1",
+      timerSound: "1",
+      timerIntervalCue: "60",
       mission: {
         currentDailyMissionId: null,
         missionReminderVisible: false,
@@ -895,10 +897,20 @@
       }
     } catch (e) {}
     try {
-      const tmRaw = localStorage.getItem(TIMER_MINUTE_CUE_STORAGE_KEY);
+      const tmRaw = localStorage.getItem(TIMER_SETTINGS_STORAGE_KEY);
       if (tmRaw) {
-        payload.timerMinuteCue = tmRaw;
-        hasAny = true;
+        try {
+          const parsed = JSON.parse(tmRaw);
+          if (parsed && typeof parsed === "object") {
+            if (parsed.timerSound != null) payload.timerSound = String(parsed.timerSound);
+            if (parsed.timerIntervalCue != null) {
+              payload.timerIntervalCue = String(parsed.timerIntervalCue);
+            }
+            hasAny = true;
+          }
+        } catch (e) {
+          /* ignore */
+        }
       }
     } catch (e) {}
     return hasAny ? payload : null;
@@ -919,7 +931,8 @@
         todayScore: 0,
         history: [],
       },
-      timerMinuteCue: timerMinuteCueEnabled ? "1" : "0",
+      timerSound: timerSoundEnabled ? "1" : "0",
+      timerIntervalCue: String(timerIntervalCueSec),
       mission: buildMissionForCloud(),
       classDisplay: {
         gardenName: gardenDisplayName,
@@ -963,8 +976,7 @@
     }
 
     applyDailyScorePackFromCloud(data.dailyScore);
-    if (data.timerMinuteCue === "0") timerMinuteCueEnabled = false;
-    else if (data.timerMinuteCue === "1") timerMinuteCueEnabled = true;
+    applyTimerSettingsFromCloud(data);
     applyMissionFromCloud(data.mission);
 
     if (
@@ -988,7 +1000,7 @@
       ensureGroupPanel();
       renderGroupButtons();
       updateClassProgress();
-      updateTimerMinuteCueButtonUI();
+      updateTimerSoundControlsUI();
       syncMissionHudLayout();
       refreshMissionPickButton();
     }
@@ -3388,6 +3400,7 @@
     if (timerAlarmActive) return;
     timerAlarmActive = true;
     showTimerAlarmModal();
+    if (!timerSoundEnabled) return;
 
     if (FREESOUND_TOKEN) {
       try {
@@ -3408,8 +3421,42 @@
     timerAlarmIntervalId = setInterval(playTimerAlarmFallback, 1400);
   }
 
-  function playTimerMinuteCue() {
-    if (!timerMinuteCueEnabled) return;
+  function getTimerIntervalMs() {
+    return timerIntervalCueSec === 30 ? 30000 : 60000;
+  }
+
+  function getTimerSessionElapsedMs() {
+    if (timerMode === "stopwatch") {
+      let ms = stopwatchElapsedMs;
+      if (timerRunning) ms += Date.now() - stopwatchStartTs;
+      return ms;
+    }
+    let remaining = countdownRemainingMs;
+    if (timerRunning) {
+      remaining = Math.max(0, countdownEndTs - Date.now());
+    }
+    return Math.max(0, countdownSessionInitialMs - remaining);
+  }
+
+  function resetTimerIntervalMarksFromElapsed() {
+    timerIntervalCueMarks = Math.floor(
+      getTimerSessionElapsedMs() / getTimerIntervalMs()
+    );
+  }
+
+  function checkTimerIntervalCues() {
+    if (!timerRunning || !timerSoundEnabled) return;
+    const elapsed = getTimerSessionElapsedMs();
+    const intervalMs = getTimerIntervalMs();
+    const mark = Math.floor(elapsed / intervalMs);
+    if (mark > 0 && mark > timerIntervalCueMarks) {
+      timerIntervalCueMarks = mark;
+      playTimerIntervalCue();
+    }
+  }
+
+  function playTimerIntervalCue() {
+    if (!timerSoundEnabled) return;
     if (FREESOUND_TOKEN) {
       void playFreesoundById(SOUND_ID_TIMER_MINUTE, 0.85);
       return;
@@ -3417,51 +3464,66 @@
     playScoreDingFallback();
   }
 
-  function loadTimerMinuteCueSetting() {
-    /* 由雲端 applyCloudData 載入 */
+  function applyTimerSettingsFromCloud(data) {
+    if (!data) return;
+    if (data.timerSound === "0") timerSoundEnabled = false;
+    else if (data.timerSound === "1") timerSoundEnabled = true;
+    else if (data.timerMinuteCue === "0") timerSoundEnabled = false;
+    else if (data.timerMinuteCue === "1") timerSoundEnabled = true;
+
+    const intervalRaw =
+      data.timerIntervalCue != null ? String(data.timerIntervalCue) : "";
+    if (intervalRaw === "30") timerIntervalCueSec = 30;
+    else if (intervalRaw === "60") timerIntervalCueSec = 60;
   }
 
-  function saveTimerMinuteCueSetting() {
+  function saveTimerSettings() {
+    try {
+      localStorage.setItem(
+        TIMER_SETTINGS_STORAGE_KEY,
+        JSON.stringify({
+          timerSound: timerSoundEnabled ? "1" : "0",
+          timerIntervalCue: String(timerIntervalCueSec),
+        })
+      );
+    } catch (e) {}
     scheduleCloudSync();
   }
 
-  function updateTimerMinuteCueButtonUI() {
-    const btn = document.getElementById("btn-timer-minute-cue");
-    if (!btn) return;
-    btn.hidden = timerMode !== "countdown";
-    btn.classList.toggle("is-on", timerMinuteCueEnabled);
-    btn.setAttribute("aria-pressed", timerMinuteCueEnabled ? "true" : "false");
-    btn.textContent = timerMinuteCueEnabled
-      ? "🔔 分鐘提示：開"
-      : "🔕 分鐘提示：關";
-  }
-
-  function setupCountdownMinuteCues(initialMs) {
-    countdownInitialMs = initialMs;
-    countdownMinuteCuesPlayed = [];
-    countdownMinuteThresholds = [];
-    if (
-      timerMinuteCueEnabled &&
-      timerMode === "countdown" &&
-      initialMs >= 5 * 60 * 1000
-    ) {
-      countdownMinuteThresholds = [240000, 180000, 120000, 60000];
-    }
-  }
-
-  function checkCountdownMinuteCues(ms) {
-    if (!timerRunning || timerMode !== "countdown") return;
-    if (!countdownMinuteThresholds.length) return;
-
-    countdownMinuteThresholds.forEach(function (threshold) {
-      if (
-        ms <= threshold &&
-        countdownMinuteCuesPlayed.indexOf(threshold) < 0
-      ) {
-        countdownMinuteCuesPlayed.push(threshold);
-        playTimerMinuteCue();
-      }
+  function updateTimerSoundControlsUI() {
+    document.querySelectorAll(".js-timer-sound-toggle").forEach(function (btn) {
+      btn.classList.toggle("is-on", timerSoundEnabled);
+      btn.setAttribute("aria-pressed", timerSoundEnabled ? "true" : "false");
+      btn.textContent = timerSoundEnabled ? "🔔 音效：開" : "🔕 音效：關";
     });
+    document.querySelectorAll(".js-timer-interval-cue").forEach(function (btn) {
+      btn.textContent =
+        timerIntervalCueSec === 30
+          ? "⏰ 提示：每 30 秒"
+          : "⏰ 提示：每 1 分鐘";
+      btn.disabled = !timerSoundEnabled;
+      btn.setAttribute("aria-disabled", timerSoundEnabled ? "false" : "true");
+    });
+  }
+
+  function initTimerSoundControls() {
+    document.querySelectorAll(".js-timer-sound-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        timerSoundEnabled = !timerSoundEnabled;
+        saveTimerSettings();
+        updateTimerSoundControlsUI();
+      });
+    });
+    document.querySelectorAll(".js-timer-interval-cue").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (!timerSoundEnabled) return;
+        timerIntervalCueSec = timerIntervalCueSec === 30 ? 60 : 30;
+        resetTimerIntervalMarksFromElapsed();
+        saveTimerSettings();
+        updateTimerSoundControlsUI();
+      });
+    });
+    updateTimerSoundControlsUI();
   }
 
   async function playFreesoundEffect(effectKey) {
@@ -5156,6 +5218,7 @@
       applyTimerDisplayState(display, text, false);
       applyTimerDisplayState(expandedDisplay, text, false);
       applyTimerDisplayState(miniDisplay, text, false);
+      checkTimerIntervalCues();
       return;
     }
 
@@ -5169,7 +5232,7 @@
     applyTimerDisplayState(expandedDisplay, text, urgent);
     applyTimerDisplayState(miniDisplay, text, urgent);
 
-    checkCountdownMinuteCues(ms);
+    checkTimerIntervalCues();
 
     if (timerRunning && ms <= 0 && !timerAlarmPlayed) {
       timerAlarmPlayed = true;
@@ -5207,6 +5270,7 @@
     if (timerMode === "stopwatch") {
       if (!timerRunning) {
         stopwatchStartTs = Date.now();
+        resetTimerIntervalMarksFromElapsed();
         timerRunning = true;
         startTimerLoop();
         expandTimerDisplay();
@@ -5221,7 +5285,10 @@
       if (countdownRemainingMs <= 0) {
         countdownRemainingMs = 1000;
       }
-      setupCountdownMinuteCues(countdownRemainingMs);
+      if (countdownSessionInitialMs <= 0) {
+        countdownSessionInitialMs = countdownRemainingMs;
+      }
+      resetTimerIntervalMarksFromElapsed();
       countdownEndTs = Date.now() + countdownRemainingMs;
       timerRunning = true;
       startTimerLoop();
@@ -5247,8 +5314,8 @@
     timerAlarmPlayed = false;
     stopTimerAlarmLoop();
     stopTimerLoop();
-    countdownMinuteThresholds = [];
-    countdownMinuteCuesPlayed = [];
+    timerIntervalCueMarks = 0;
+    countdownSessionInitialMs = 0;
 
     if (timerMode === "stopwatch") {
       stopwatchElapsedMs = 0;
@@ -5266,9 +5333,8 @@
     timerAlarmPlayed = false;
     stopTimerAlarmLoop();
     stopTimerLoop();
-    countdownMinuteThresholds = [];
-    countdownMinuteCuesPlayed = [];
-    updateTimerMinuteCueButtonUI();
+    timerIntervalCueMarks = 0;
+    countdownSessionInitialMs = 0;
 
     document.querySelectorAll(".timer-mode-tab").forEach(function (tab) {
       const active = tab.dataset.timerMode === mode;
@@ -6046,7 +6112,9 @@
         groups: JSON.stringify(payload.groups),
         classProgress: JSON.stringify(payload.classProgress),
         dailyScore: JSON.stringify(payload.dailyScore),
-        timerMinuteCue: payload.timerMinuteCue,
+        timerSound: payload.timerSound,
+        timerIntervalCue: payload.timerIntervalCue,
+        timerMinuteCue: payload.timerSound,
         mission: JSON.stringify(payload.mission),
         classDisplay: JSON.stringify(payload.classDisplay),
       },
@@ -6127,8 +6195,7 @@
     if (data.dailyScore) {
       applyDailyScorePackFromCloud(JSON.parse(data.dailyScore));
     }
-    if (data.timerMinuteCue === "0") timerMinuteCueEnabled = false;
-    else if (data.timerMinuteCue === "1") timerMinuteCueEnabled = true;
+    applyTimerSettingsFromCloud(data);
     if (data.mission) {
       applyMissionFromCloud(JSON.parse(data.mission));
     }
@@ -6160,7 +6227,7 @@
     ensureGroupPanel();
     renderGroupButtons();
     updateClassProgress();
-    updateTimerMinuteCueButtonUI();
+    updateTimerSoundControlsUI();
     syncMissionHudLayout();
   }
 
@@ -6296,15 +6363,7 @@
     }
 
     initTimerMiniWidget();
-
-    const minuteCueBtn = document.getElementById("btn-timer-minute-cue");
-    if (minuteCueBtn) {
-      minuteCueBtn.addEventListener("click", function () {
-        timerMinuteCueEnabled = !timerMinuteCueEnabled;
-        saveTimerMinuteCueSetting();
-        updateTimerMinuteCueButtonUI();
-      });
-    }
+    initTimerSoundControls();
 
     ["timer-min", "timer-sec"].forEach(function (id) {
       const el = document.getElementById(id);
@@ -6318,8 +6377,6 @@
       }
     });
 
-    loadTimerMinuteCueSetting();
-    updateTimerMinuteCueButtonUI();
     setTimerMode("stopwatch");
     initDailyMissionModule();
     initDataBackupModule();
@@ -7177,7 +7234,7 @@
     loadClassProgressMeta();
     loadDailyScoreLog();
     initClassProgressUI();
-    updateTimerMinuteCueButtonUI();
+    updateTimerSoundControlsUI();
 
     preloadFreesoundEffects();
     initToolsSidebar();

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=99" />
+  <link rel="stylesheet" href="style.css?v=100" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -249,15 +249,6 @@
           <button type="button" id="btn-timer-pause" class="tools-btn tools-btn--ghost">⏸ 暫停</button>
           <button type="button" id="btn-timer-reset" class="tools-btn tools-btn--ghost">↺ 重設</button>
         </div>
-        <button
-          type="button"
-          id="btn-timer-minute-cue"
-          class="tools-btn tools-btn--toggle is-on"
-          aria-pressed="true"
-          title="倒計時滿 5 分鐘起，每少 1 分鐘播放提示音"
-        >
-          🔔 分鐘提示
-        </button>
       </div>
       </div>
     </section>
@@ -824,6 +815,18 @@
         00:00
       </div>
     </div>
+    <div class="timer-widget-sound-controls">
+      <button
+        type="button"
+        class="timer-widget-sound-btn js-timer-sound-toggle is-on"
+        aria-pressed="true"
+      >
+        🔔 音效：開
+      </button>
+      <button type="button" class="timer-widget-sound-btn js-timer-interval-cue">
+        ⏰ 提示：每 1 分鐘
+      </button>
+    </div>
     <button
       type="button"
       id="btn-timer-mini-alarm-close"
@@ -869,6 +872,18 @@
         aria-live="polite"
       >
         00:00
+      </div>
+      <div class="timer-widget-sound-controls timer-widget-sound-controls--expanded">
+        <button
+          type="button"
+          class="timer-widget-sound-btn js-timer-sound-toggle is-on"
+          aria-pressed="true"
+        >
+          🔔 音效：開
+        </button>
+        <button type="button" class="timer-widget-sound-btn js-timer-interval-cue">
+          ⏰ 提示：每 1 分鐘
+        </button>
       </div>
       <button
         type="button"
@@ -1080,6 +1095,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=99"></script>
+  <script src="script.js?v=100"></script>
 </body>
 </html>
