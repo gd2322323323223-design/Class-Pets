@@ -2633,6 +2633,7 @@ body.growth-journal-open {
   align-items: center;
   justify-content: space-between;
   gap: 0.35rem;
+  margin-bottom: 0.35rem;
 }
 
 .group-score-panel__label {
@@ -2647,7 +2648,7 @@ body.growth-journal-open {
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.35rem;
 }
 
 .group-score-panel__bulk-btn {
@@ -2987,12 +2988,23 @@ body.growth-journal-open {
   margin-bottom: 0.45rem;
 }
 
+.bulk-pick-modal__title {
+  font-size: 1.55rem;
+  color: #1a1208;
+}
+
 .bulk-pick-modal__hint,
 .timer-alarm-modal__hint {
   font-size: 0.98rem;
   color: var(--wood-text-muted);
   margin-bottom: 0.85rem;
   line-height: 1.45;
+}
+
+.bulk-pick-modal__hint {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #422006;
 }
 
 .bulk-pick-modal__toolbar {
@@ -3004,6 +3016,11 @@ body.growth-journal-open {
 .bulk-pick-modal__toolbar .tools-btn {
   font-size: 0.95rem;
   padding: 0.55rem 0.85rem;
+}
+
+.bulk-pick-modal__toolbar .tools-btn {
+  font-size: 1.05rem;
+  padding: 0.62rem 0.95rem;
 }
 
 .bulk-pick-list {
@@ -3019,26 +3036,26 @@ body.growth-journal-open {
 .bulk-pick-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.55rem 0.65rem;
+  gap: 0.55rem;
+  padding: 0.7rem 0.8rem;
   border-radius: 12px;
   border: 1px solid rgba(120, 53, 15, 0.2);
   background: rgba(255, 255, 255, 0.65);
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 1.12rem;
+  font-weight: 800;
   color: #1a1208;
   cursor: pointer;
 }
 
 .bulk-pick-item input {
   flex-shrink: 0;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .bulk-pick-modal__actions .tools-btn {
-  font-size: 1rem;
-  padding: 0.65rem 1rem;
+  font-size: 1.12rem;
+  padding: 0.75rem 1.1rem;
 }
 
 .bulk-pick-modal__actions {

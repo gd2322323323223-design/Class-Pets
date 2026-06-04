@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "92";
+  const APP_BUILD_VERSION = "93";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -470,9 +470,7 @@
     const next = (pack.todayScore || 0) + Math.floor(delta);
     pack.todayScore = Math.max(0, next);
     saveDailyScoreLog(pack);
-    if (delta > 0) {
-      notifyMissionScoreGain(delta);
-    }
+    notifyMissionScoreChange(delta);
   }
 
   function updateClassProgress() {
@@ -4037,6 +4035,10 @@
     panel.className = "group-score-panel";
     panel.setAttribute("aria-label", "組別加分");
     panel.innerHTML =
+      '<div class="group-score-panel__head">' +
+      '<span class="group-score-panel__label">組別加分</span>' +
+      '<button type="button" id="btn-group-manage" class="group-score-panel__manage" title="管理組別">⚙ 管理</button>' +
+      "</div>" +
       '<div class="group-score-panel__bulk">' +
       '<button type="button" id="btn-bulk-pick" class="group-score-panel__bulk-btn" title="自由揀選學生批量加分">☑ 批量揀選</button>' +
       '<span id="bulk-pick-count" class="group-score-panel__bulk-count" hidden></span>' +
@@ -4072,10 +4074,6 @@
       "</div>" +
       "</div>" +
       '<button type="button" id="btn-bulk-pick-cancel" class="group-score-panel__bulk-cancel">取消揀選</button>' +
-      "</div>" +
-      '<div class="group-score-panel__head">' +
-      '<span class="group-score-panel__label">組別加分</span>' +
-      '<button type="button" id="btn-group-manage" class="group-score-panel__manage" title="管理組別">⚙ 管理</button>' +
       "</div>" +
       '<div id="group-buttons" class="group-score-panel__buttons"></div>';
 
@@ -5441,9 +5439,12 @@
     playLuckyDrawPulse();
   }
 
-  function notifyMissionScoreGain(delta) {
-    if (!scoreKingMission.active || !Number.isFinite(delta) || delta <= 0) return;
-    scoreKingMission.sessionScore += Math.floor(delta);
+  function notifyMissionScoreChange(delta) {
+    if (!scoreKingMission.active || !Number.isFinite(delta) || delta === 0) return;
+    scoreKingMission.sessionScore = Math.max(
+      0,
+      scoreKingMission.sessionScore + Math.floor(delta)
+    );
     updateMissionScoreHud();
     saveMissionState();
   }
