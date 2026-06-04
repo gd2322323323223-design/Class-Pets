@@ -12,7 +12,7 @@
   const DEFAULT_SLOT_COUNT = 22;
   const MIN_SLOT_COUNT = 1;
   const MAX_SLOT_COUNT = 40;
-  const DEFAULT_GARDEN_NAME = "欣賞園地";
+  const DEFAULT_GARDEN_NAME = "讚賞園地";
   const DEFAULT_NAME = "待命名";
   const DEFAULT_EMOJI = "😄";
   const EMOJI_SCORE_UP = "😍";
