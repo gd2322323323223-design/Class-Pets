@@ -1981,8 +1981,9 @@ body.teacher-mode-active .slot {
   position: absolute;
   top: 0.4rem;
   right: 0.45rem;
-  z-index: 2;
+  z-index: 24;
   display: flex;
+  pointer-events: auto;
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.35rem;

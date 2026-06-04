@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "110";
+  const APP_BUILD_VERSION = "111";
   const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
@@ -412,6 +412,7 @@
         if (ev.target === modal) closeClassProgressCelebration();
       });
     }
+    initScoreUndoRedoUi();
   }
 
   function saveDailyScoreLog(pack) {
@@ -4036,46 +4037,85 @@
     refreshScoreUndoButtons();
   }
 
+  function discardLastScoreUndoSnapshot() {
+    if (!scoreUndoStack.length) return;
+    scoreUndoStack.pop();
+    refreshScoreUndoButtons();
+  }
+
   function applyScoreUndoSnapshot(snapshot) {
+    if (!snapshot || !Array.isArray(snapshot.scores)) return false;
+
+    cloudSyncSuspended = true;
     snapshot.scores.forEach(function (entry) {
       const s = getSlotById(entry.id);
-      if (s) s.score = entry.score;
+      if (s) s.score = clampScore(entry.score);
     });
     const pack = loadDailyScoreLog();
     pack.todayScore =
       typeof snapshot.todayScore === "number" ? Math.max(0, snapshot.todayScore) : 0;
-    saveDailyScoreLog(pack);
     dailyScorePack = pack;
+    try {
+      localStorage.setItem(DAILY_SCORE_STORAGE_KEY, JSON.stringify(pack));
+    } catch (e) {}
     if (snapshot.scoreKingSession !== null && scoreKingMission.active) {
       scoreKingMission.sessionScore = snapshot.scoreKingSession;
       updateMissionScoreHud();
     }
-    saveSlots();
-    slots.forEach(updateSlotPresentation);
+
+    slots.forEach(function (s) {
+      syncSlotHatchState(s);
+      updateSlotPresentation(s);
+    });
+    updateClassProgress();
+
+    if (cloudSyncTimerId !== null) {
+      clearTimeout(cloudSyncTimerId);
+      cloudSyncTimerId = null;
+    }
+    cloudSyncSuspended = false;
+    flushCloudSync();
+    return true;
   }
 
   function undoLastScoreAction() {
-    if (!teacherMode) return;
+    if (!teacherMode) {
+      showAppToast("請先進入編輯模式。", { variant: "warn" });
+      return;
+    }
     if (!scoreUndoStack.length) {
       showAppToast("沒有可復原的加減分行動。", { variant: "warn" });
       return;
     }
     scoreRedoStack.push(captureScoreUndoSnapshot());
     const snapshot = scoreUndoStack.pop();
-    applyScoreUndoSnapshot(snapshot);
+    if (!applyScoreUndoSnapshot(snapshot)) {
+      showAppToast("復原失敗，請再試一次。", { variant: "warn" });
+      refreshScoreUndoButtons();
+      return;
+    }
     refreshScoreUndoButtons();
+    showAppToast("已復原上一次加減分。", { variant: "success" });
   }
 
   function redoLastScoreAction() {
-    if (!teacherMode) return;
+    if (!teacherMode) {
+      showAppToast("請先進入編輯模式。", { variant: "warn" });
+      return;
+    }
     if (!scoreRedoStack.length) {
       showAppToast("沒有可取消復原的動作。", { variant: "warn" });
       return;
     }
     scoreUndoStack.push(captureScoreUndoSnapshot());
     const snapshot = scoreRedoStack.pop();
-    applyScoreUndoSnapshot(snapshot);
+    if (!applyScoreUndoSnapshot(snapshot)) {
+      showAppToast("取消復原失敗，請再試一次。", { variant: "warn" });
+      refreshScoreUndoButtons();
+      return;
+    }
     refreshScoreUndoButtons();
+    showAppToast("已取消復原。", { variant: "success" });
   }
 
   function refreshScoreUndoButtons() {
@@ -4083,8 +4123,36 @@
     const undoBtn = document.getElementById("btn-score-undo");
     const redoBtn = document.getElementById("btn-score-redo");
     if (wrap) wrap.hidden = !teacherMode;
-    if (undoBtn) undoBtn.disabled = scoreUndoStack.length === 0;
-    if (redoBtn) redoBtn.disabled = scoreRedoStack.length === 0;
+    if (undoBtn) {
+      undoBtn.disabled = scoreUndoStack.length === 0;
+      undoBtn.setAttribute("aria-disabled", undoBtn.disabled ? "true" : "false");
+    }
+    if (redoBtn) {
+      redoBtn.disabled = scoreRedoStack.length === 0;
+      redoBtn.setAttribute("aria-disabled", redoBtn.disabled ? "true" : "false");
+    }
+  }
+
+  function initScoreUndoRedoUi() {
+    const undoBtn = document.getElementById("btn-score-undo");
+    const redoBtn = document.getElementById("btn-score-redo");
+    if (undoBtn && undoBtn.dataset.bound !== "1") {
+      undoBtn.dataset.bound = "1";
+      undoBtn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        undoLastScoreAction();
+      });
+    }
+    if (redoBtn && redoBtn.dataset.bound !== "1") {
+      redoBtn.dataset.bound = "1";
+      redoBtn.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        redoLastScoreAction();
+      });
+    }
+    refreshScoreUndoButtons();
   }
 
   function scoreToastStudentLabel(slot) {
@@ -4399,6 +4467,7 @@
       }
     });
     if (!applied) {
+      discardLastScoreUndoSnapshot();
       if (delta > 0) {
         showAppToast("所選學生均在睡眠中，無法加分。", { variant: "warn" });
       } else {
@@ -5325,6 +5394,7 @@
       }
     });
     if (!memberCount) {
+      discardLastScoreUndoSnapshot();
       if (delta > 0) {
         showAppToast("組別成員均在睡眠中，無法加分。", { variant: "warn" });
       }
@@ -7810,14 +7880,7 @@
       btnTeacherMode.addEventListener("dblclick", onTeacherModeButtonDblClick);
     }
 
-    const btnScoreUndo = document.getElementById("btn-score-undo");
-    const btnScoreRedo = document.getElementById("btn-score-redo");
-    if (btnScoreUndo) {
-      btnScoreUndo.addEventListener("click", undoLastScoreAction);
-    }
-    if (btnScoreRedo) {
-      btnScoreRedo.addEventListener("click", redoLastScoreAction);
-    }
+    initScoreUndoRedoUi();
 
     document.addEventListener("keydown", function (ev) {
       if (!teacherMode) return;
