@@ -2980,6 +2980,51 @@ body.growth-journal-open {
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
 }
 
+.bulk-pick-modal__card.is-bulk-scoring {
+  width: min(94vw, 560px);
+}
+
+.bulk-pick-modal__bulk-score {
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.8rem;
+  border-radius: 14px;
+  border: 2px solid rgba(212, 175, 55, 0.45);
+  background: rgba(255, 251, 235, 0.96);
+}
+
+.bulk-pick-modal__bulk-score .group-score-panel__bulk-btns {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.bulk-pick-modal__bulk-score .bulk-score-quick-btn {
+  min-width: 2.6rem;
+  height: 2.1rem;
+  font-size: 1rem;
+}
+
+.bulk-pick-modal__bulk-score .group-score-panel__bulk-score-label {
+  font-size: 1.05rem;
+  margin-bottom: 0.55rem;
+}
+
+.bulk-pick-modal__bulk-score .group-score-panel__bulk-row-label {
+  font-size: 0.98rem;
+}
+
+.bulk-pick-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.bulk-pick-modal__actions .tools-btn {
+  flex: 1 1 auto;
+  min-width: 7rem;
+}
+
 .bulk-pick-modal__title,
 .timer-alarm-modal__title {
   font-size: 1.42rem;

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=93" />
+  <link rel="stylesheet" href="style.css?v=94" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v93</div>
+  <div class="build-version-badge" aria-label="版本號">v94</div>
 
   <div
     id="class-code-modal"
@@ -530,14 +530,48 @@
   >
     <div class="bulk-pick-modal__card modal-surface">
       <h2 id="bulk-pick-title" class="bulk-pick-modal__title">批量揀選學生</h2>
-      <p class="bulk-pick-modal__hint">勾選要加分的學生，確認後可一次加分。</p>
-      <div class="bulk-pick-modal__toolbar">
-        <button type="button" id="btn-bulk-select-all" class="tools-btn tools-btn--ghost">全選</button>
-        <button type="button" id="btn-bulk-select-none" class="tools-btn tools-btn--ghost">清除</button>
+      <p id="bulk-pick-hint" class="bulk-pick-modal__hint">勾選要加分的學生，確認後可在此視窗直接點選分數。</p>
+      <div id="bulk-pick-select-phase" class="bulk-pick-modal__select-phase">
+        <div class="bulk-pick-modal__toolbar">
+          <button type="button" id="btn-bulk-select-all" class="tools-btn tools-btn--ghost">全選</button>
+          <button type="button" id="btn-bulk-select-none" class="tools-btn tools-btn--ghost">清除</button>
+        </div>
+        <ul id="bulk-pick-list" class="bulk-pick-list"></ul>
       </div>
-      <ul id="bulk-pick-list" class="bulk-pick-list"></ul>
+      <div id="bulk-score-inline" class="group-score-panel__bulk-score bulk-pick-modal__bulk-score" hidden>
+        <p id="bulk-score-inline-label" class="group-score-panel__bulk-score-label">已揀選 0 人</p>
+        <div class="group-score-panel__bulk-row">
+          <span class="group-score-panel__bulk-row-label">加分</span>
+          <div class="group-score-panel__bulk-btns">
+            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="1">+1</button>
+            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="2">+2</button>
+            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="3">+3</button>
+            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="4">+4</button>
+            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="5">+5</button>
+          </div>
+          <div class="group-score-panel__bulk-custom">
+            <input id="bulk-score-add-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂加分" />
+            <button type="button" id="btn-bulk-score-add-custom" class="bulk-score-custom-btn bulk-score-custom-btn--add">套用加分</button>
+          </div>
+        </div>
+        <div id="bulk-score-minus-section" class="group-score-panel__bulk-row" hidden>
+          <span class="group-score-panel__bulk-row-label">減分</span>
+          <div class="group-score-panel__bulk-btns">
+            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-1">-1</button>
+            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-2">-2</button>
+            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-3">-3</button>
+            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-4">-4</button>
+            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-5">-5</button>
+          </div>
+          <div class="group-score-panel__bulk-custom">
+            <input id="bulk-score-sub-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂減分" />
+            <button type="button" id="btn-bulk-score-sub-custom" class="bulk-score-custom-btn bulk-score-custom-btn--sub">套用減分</button>
+          </div>
+        </div>
+      </div>
       <div class="bulk-pick-modal__actions">
         <button type="button" id="btn-bulk-pick-confirm" class="tools-btn tools-btn--primary">確認揀選</button>
+        <button type="button" id="btn-bulk-pick-repick" class="tools-btn tools-btn--ghost" hidden>重新揀選</button>
         <button type="button" id="btn-bulk-pick-close" class="tools-btn tools-btn--ghost">取消</button>
       </div>
     </div>
@@ -1042,6 +1076,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=93"></script>
+  <script src="script.js?v=94"></script>
 </body>
 </html>
