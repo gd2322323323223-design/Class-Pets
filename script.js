@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "94";
+  const APP_BUILD_VERSION = "95";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";

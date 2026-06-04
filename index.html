@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=94" />
+  <link rel="stylesheet" href="style.css?v=95" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v94</div>
+  <div class="build-version-badge" aria-label="版本號">v95</div>
 
   <div
     id="class-code-modal"
@@ -540,32 +540,36 @@
       </div>
       <div id="bulk-score-inline" class="group-score-panel__bulk-score bulk-pick-modal__bulk-score" hidden>
         <p id="bulk-score-inline-label" class="group-score-panel__bulk-score-label">已揀選 0 人</p>
-        <div class="group-score-panel__bulk-row">
-          <span class="group-score-panel__bulk-row-label">加分</span>
-          <div class="group-score-panel__bulk-btns">
-            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="1">+1</button>
-            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="2">+2</button>
-            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="3">+3</button>
-            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="4">+4</button>
-            <button type="button" class="bulk-score-quick-btn" data-bulk-delta="5">+5</button>
-          </div>
-          <div class="group-score-panel__bulk-custom">
-            <input id="bulk-score-add-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂加分" />
-            <button type="button" id="btn-bulk-score-add-custom" class="bulk-score-custom-btn bulk-score-custom-btn--add">套用加分</button>
+        <div class="bulk-score-zone bulk-score-zone--add">
+          <div class="bulk-score-zone__head" aria-hidden="true">加分</div>
+          <div class="bulk-score-zone__body">
+            <div class="group-score-panel__bulk-btns">
+              <button type="button" class="bulk-score-quick-btn" data-bulk-delta="1">+1</button>
+              <button type="button" class="bulk-score-quick-btn" data-bulk-delta="2">+2</button>
+              <button type="button" class="bulk-score-quick-btn" data-bulk-delta="3">+3</button>
+              <button type="button" class="bulk-score-quick-btn" data-bulk-delta="4">+4</button>
+              <button type="button" class="bulk-score-quick-btn" data-bulk-delta="5">+5</button>
+            </div>
+            <div class="group-score-panel__bulk-custom">
+              <input id="bulk-score-add-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂加分" />
+              <button type="button" id="btn-bulk-score-add-custom" class="bulk-score-custom-btn bulk-score-custom-btn--add">套用加分</button>
+            </div>
           </div>
         </div>
-        <div id="bulk-score-minus-section" class="group-score-panel__bulk-row" hidden>
-          <span class="group-score-panel__bulk-row-label">減分</span>
-          <div class="group-score-panel__bulk-btns">
-            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-1">-1</button>
-            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-2">-2</button>
-            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-3">-3</button>
-            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-4">-4</button>
-            <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-5">-5</button>
-          </div>
-          <div class="group-score-panel__bulk-custom">
-            <input id="bulk-score-sub-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂減分" />
-            <button type="button" id="btn-bulk-score-sub-custom" class="bulk-score-custom-btn bulk-score-custom-btn--sub">套用減分</button>
+        <div id="bulk-score-minus-section" class="bulk-score-zone bulk-score-zone--sub" hidden>
+          <div class="bulk-score-zone__head" aria-hidden="true">減分</div>
+          <div class="bulk-score-zone__body">
+            <div class="group-score-panel__bulk-btns">
+              <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-1">-1</button>
+              <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-2">-2</button>
+              <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-3">-3</button>
+              <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-4">-4</button>
+              <button type="button" class="bulk-score-quick-btn bulk-score-quick-btn--minus" data-bulk-delta="-5">-5</button>
+            </div>
+            <div class="group-score-panel__bulk-custom">
+              <input id="bulk-score-sub-input" class="group-score-panel__bulk-custom-input" type="number" min="1" max="99" placeholder="分數" aria-label="自訂減分" />
+              <button type="button" id="btn-bulk-score-sub-custom" class="bulk-score-custom-btn bulk-score-custom-btn--sub">套用減分</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1076,6 +1080,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=94"></script>
+  <script src="script.js?v=95"></script>
 </body>
 </html>
