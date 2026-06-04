@@ -1799,6 +1799,13 @@ body.lucky-draw-running .slot {
 
 body.teacher-mode-active .build-version-badge {
   display: block;
+  cursor: pointer;
+}
+
+.build-version-badge--dev {
+  border-color: rgba(251, 191, 36, 0.65);
+  color: #fde68a;
+  background: rgba(120, 53, 15, 0.82);
 }
 
 body.teacher-mode-active .slot {

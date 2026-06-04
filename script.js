@@ -4,7 +4,10 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "104";
+  const APP_BUILD_VERSION = "105";
+  const DEV_MODE_PASSWORD = "0315";
+  const DEV_MODE_BADGE_CLICKS = 4;
+  const DEV_MODE_BADGE_CLICK_MS = 900;
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -146,6 +149,9 @@
     return Number.isInteger(n) && n >= MIN_SLOT_COUNT && n <= MAX_SLOT_COUNT;
   }
   let teacherMode = false;
+  let developerMode = false;
+  let versionBadgeClickCount = 0;
+  let versionBadgeClickTimerId = null;
   let animCycleTimeoutId = null;
   let activeScoreMenuSlotId = null;
   let activeGroupScoreMenuId = null;
@@ -531,7 +537,64 @@
 
   function updateBuildVersionBadge() {
     const badge = document.querySelector(".build-version-badge");
-    if (badge) badge.textContent = "v" + APP_BUILD_VERSION;
+    if (!badge) return;
+    badge.textContent = developerMode
+      ? "v" + APP_BUILD_VERSION + "·開發"
+      : "v" + APP_BUILD_VERSION;
+    badge.classList.toggle("build-version-badge--dev", developerMode);
+  }
+
+  function tryActivateDeveloperMode() {
+    if (developerMode) return;
+    showAppPrompt("請輸入開發人模式密碼", "", {
+      title: "開發人模式",
+      password: true,
+      placeholder: "密碼",
+    }).then(function (val) {
+      if (val === null) return;
+      if (val !== DEV_MODE_PASSWORD) {
+        showAppToast("密碼錯誤。", { variant: "warn" });
+        return;
+      }
+      developerMode = true;
+      refreshDeveloperModeUI();
+      syncDeveloperToolsVisibility();
+    });
+  }
+
+  function onBuildVersionBadgeClick() {
+    versionBadgeClickCount += 1;
+    if (versionBadgeClickTimerId !== null) {
+      clearTimeout(versionBadgeClickTimerId);
+    }
+    versionBadgeClickTimerId = setTimeout(function () {
+      versionBadgeClickCount = 0;
+      versionBadgeClickTimerId = null;
+    }, DEV_MODE_BADGE_CLICK_MS);
+    if (versionBadgeClickCount >= DEV_MODE_BADGE_CLICKS) {
+      versionBadgeClickCount = 0;
+      if (versionBadgeClickTimerId !== null) {
+        clearTimeout(versionBadgeClickTimerId);
+        versionBadgeClickTimerId = null;
+      }
+      tryActivateDeveloperMode();
+    }
+  }
+
+  function initBuildVersionBadgeSecret() {
+    const badge = document.querySelector(".build-version-badge");
+    if (!badge) return;
+    badge.addEventListener("click", onBuildVersionBadgeClick);
+  }
+
+  function refreshDeveloperModeUI() {
+    document.body.classList.toggle("developer-mode-active", developerMode);
+    updateBuildVersionBadge();
+  }
+
+  function syncDeveloperToolsVisibility() {
+    const resetBtn = document.getElementById("btn-class-code-reset");
+    if (resetBtn) resetBtn.hidden = !developerMode;
   }
 
   function getDb() {
@@ -1283,6 +1346,7 @@
   }
 
   function confirmSitePassword() {
+    if (developerMode) return Promise.resolve(true);
     return showAppPrompt("請輸入密碼以確認此操作。", "", {
       title: "密碼確認",
       password: true,
@@ -1298,70 +1362,53 @@
   }
 
   function onClassCodeResetClick() {
-    if (!teacherMode && !ensureTeacherModeOn()) return;
+    if (!developerMode) return;
 
     const input = document.getElementById("class-code-sidebar-input");
     const code = sanitizeClassCode(
       input && input.value ? input.value : currentClassCode
     );
-    if (!code) {
-      showAppToast("請先輸入要重置的班級代碼。", { variant: "warn" });
+    if (!code) return;
+
+    const db = getDb();
+    if (!db) {
+      console.warn("[Firebase] 重置失敗：尚未初始化");
       return;
     }
-    confirmSitePassword().then(function (passwordOk) {
-      if (!passwordOk) return;
-      return showAppConfirm(
-      "確定將「" +
-        code +
-        "」的雲端資料重置為空白班級？\n分數、姓名、組別將全部歸零，且無法復原。",
-      { title: "重置班級資料", confirmText: "重置", danger: true }
-    ).then(function (ok) {
-      if (!ok) return;
-      const db = getDb();
-      if (!db) {
-        showAppToast(window.__firebaseInitError || "Firebase 尚未初始化。", {
-          variant: "warn",
-        });
-        return;
-      }
-      connectGeneration += 1;
-      if (cloudSyncTimerId !== null) {
-        clearTimeout(cloudSyncTimerId);
-        cloudSyncTimerId = null;
-      }
-      lastCloudWriteAt = 0;
-      cloudSyncSuspended = true;
-      detachCloudListener();
+    connectGeneration += 1;
+    if (cloudSyncTimerId !== null) {
+      clearTimeout(cloudSyncTimerId);
+      cloudSyncTimerId = null;
+    }
+    lastCloudWriteAt = 0;
+    cloudSyncSuspended = true;
+    detachCloudListener();
 
-      const fresh = buildFreshCloudData();
-      db.ref(code)
-        .set(fresh)
-        .then(function () {
-          currentClassCode = code;
-          rememberClassCode(code);
-          syncClassCodeInputs(code);
-          resetClassSwitchSessionState();
-          applyCloudData(fresh, { initial: true, classSwitch: true });
-          cloudSyncSuspended = false;
-          attachCloudListener(code);
-          updateDashHeaderTitle();
-          setCloudSyncStatus("雲端：已重置（" + code + "）", false);
-          showAppToast("「" + code + "」已重置為空白班級。", { variant: "success" });
-          if (appBootstrapped) {
-            renderAll();
-            ensureGroupPanel();
-            renderGroupButtons();
-            updateClassProgress();
-            syncMissionHudLayout();
-          }
-        })
-        .catch(function (err) {
-          cloudSyncSuspended = false;
-          console.warn("[Firebase] 重置失敗", err);
-          showAppToast("重置失敗，請檢查網路或 Firebase 設定。", { variant: "warn" });
-        });
-    });
-    });
+    const fresh = buildFreshCloudData();
+    db.ref(code)
+      .set(fresh)
+      .then(function () {
+        currentClassCode = code;
+        rememberClassCode(code);
+        syncClassCodeInputs(code);
+        resetClassSwitchSessionState();
+        applyCloudData(fresh, { initial: true, classSwitch: true });
+        cloudSyncSuspended = false;
+        attachCloudListener(code);
+        updateDashHeaderTitle();
+        setCloudSyncStatus("雲端：已重置（" + code + "）", false);
+        if (appBootstrapped) {
+          renderAll();
+          ensureGroupPanel();
+          renderGroupButtons();
+          updateClassProgress();
+          syncMissionHudLayout();
+        }
+      })
+      .catch(function (err) {
+        cloudSyncSuspended = false;
+        console.warn("[Firebase] 重置失敗", err);
+      });
   }
 
   function initCollapsiblePanel(toggleEl, bodyEl, panelEl) {
@@ -1377,6 +1424,7 @@
   let appToastTimeoutId = null;
 
   function showAppToast(message, opts) {
+    if (developerMode) return;
     opts = opts || {};
     const duration = opts.duration != null ? opts.duration : 2800;
     const toast = document.getElementById("app-toast");
@@ -1401,6 +1449,9 @@
 
   function showAppConfirm(message, opts) {
     opts = opts || {};
+    if (developerMode) {
+      return Promise.resolve(!!opts.devAutoOk);
+    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-confirm-modal");
       const card = modal ? modal.querySelector(".app-dialog-modal__card") : null;
@@ -1478,6 +1529,9 @@
 
   function showAppPrompt(message, defaultValue, opts) {
     opts = opts || {};
+    if (developerMode && !opts.allowInDeveloperMode) {
+      return Promise.resolve(null);
+    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-prompt-modal");
       const titleEl = document.getElementById("app-prompt-title");
@@ -1572,6 +1626,9 @@
   }
 
   function showAppChoice(title, message, choices) {
+    if (developerMode) {
+      return Promise.resolve(null);
+    }
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-choice-modal");
       const titleEl = document.getElementById("app-choice-title");
@@ -3868,7 +3925,7 @@
   }
 
   function showScoreToast(slot, delta) {
-    if (!delta) return;
+    if (developerMode || !delta) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -3897,7 +3954,7 @@
   }
 
   function showGroupScoreToast(group, delta) {
-    if (!delta || !group) return;
+    if (developerMode || !delta || !group) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -4106,6 +4163,7 @@
   }
 
   function showBulkScoreToast(count, delta) {
+    if (developerMode) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
@@ -7072,6 +7130,14 @@
     }
   }
 
+  function syncToolsSidebarEditHint() {
+    const hint = document.querySelector(".tools-sidebar__edit-hint");
+    if (!hint) return;
+    hint.textContent = teacherMode
+      ? "已進入編輯模式。"
+      : "進入編輯模式，開啟更多功能。";
+  }
+
   function syncTeacherToolsPanelsVisibility() {
     document.querySelectorAll(".js-teacher-tools-panel").forEach(function (panel) {
       panel.hidden = !teacherMode;
@@ -7087,7 +7153,9 @@
 
   function refreshTeacherModeUI() {
     document.body.classList.toggle("teacher-mode-active", teacherMode);
+    syncToolsSidebarEditHint();
     syncTeacherToolsPanelsVisibility();
+    syncDeveloperToolsVisibility();
     if (btnTeacherMode) {
       btnTeacherMode.classList.toggle("is-active", teacherMode);
       const labelEl = document.getElementById("teacher-mode-btn-label");
@@ -7104,8 +7172,6 @@
     }
     updateBulkPickUI();
     refreshScoreUndoButton();
-    const resetBtn = document.getElementById("btn-class-code-reset");
-    if (resetBtn) resetBtn.hidden = !teacherMode;
     const studentAddBtn = document.getElementById("btn-student-add");
     const studentRemoveBtn = document.getElementById("btn-student-remove");
     const gardenInput = document.getElementById("garden-name-input");
@@ -7392,6 +7458,9 @@
 
   function continueBoot() {
     updateBuildVersionBadge();
+    initBuildVersionBadgeSecret();
+    refreshDeveloperModeUI();
+    syncDeveloperToolsVisibility();
     showFileProtocolBanner();
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);
