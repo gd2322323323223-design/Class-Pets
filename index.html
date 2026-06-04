@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=98" />
+  <link rel="stylesheet" href="style.css?v=99" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -608,7 +608,6 @@
   >
     <div class="group-manage-modal__card modal-surface">
       <h2 id="group-manage-title" class="group-manage-modal__title">管理組別</h2>
-      <p class="group-manage-modal__hint">最多 10 組。點選組別可查看成員並加分。</p>
       <ul id="group-manage-list" class="group-manage-list"></ul>
       <div class="group-manage-modal__actions">
         <button type="button" id="btn-group-add" class="tools-btn tools-btn--primary">＋ 新增組別</button>
@@ -801,6 +800,14 @@
       <span id="timer-mini-mode" class="timer-mini-widget__mode">計時</span>
       <button
         type="button"
+        id="btn-timer-mini-enlarge"
+        class="timer-mini-widget__enlarge"
+        aria-label="放大計時器"
+      >
+        放大
+      </button>
+      <button
+        type="button"
         id="btn-timer-mini-close"
         class="timer-mini-widget__close"
         aria-label="關閉計時器視窗"
@@ -808,12 +815,7 @@
         ✕
       </button>
     </div>
-    <button
-      type="button"
-      id="btn-timer-mini-expand"
-      class="timer-mini-widget__body"
-      aria-label="點擊放大計時器"
-    >
+    <div class="timer-mini-widget__body">
       <div
         id="timer-display-mini"
         class="timer-display timer-display--mini"
@@ -821,7 +823,7 @@
       >
         00:00
       </div>
-    </button>
+    </div>
     <button
       type="button"
       id="btn-timer-mini-alarm-close"
@@ -1078,6 +1080,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=98"></script>
+  <script src="script.js?v=99"></script>
 </body>
 </html>

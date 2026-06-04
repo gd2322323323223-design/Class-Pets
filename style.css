@@ -964,7 +964,8 @@ body.timer-expanded-open {
 .timer-mini-widget {
   position: fixed;
   z-index: 195;
-  width: min(84vw, 420px);
+  width: max-content;
+  max-width: min(84vw, 420px);
   padding: 0.9rem 1.1rem 1.1rem;
   border-radius: 18px;
   border: 2px solid rgba(94, 234, 212, 0.55);
@@ -1011,6 +1012,25 @@ body.timer-expanded-open {
   text-overflow: ellipsis;
 }
 
+.timer-mini-widget__enlarge {
+  flex-shrink: 0;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid rgba(94, 234, 212, 0.45);
+  border-radius: 9px;
+  background: rgba(94, 234, 212, 0.18);
+  color: #ecfdf5;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.timer-mini-widget__enlarge:hover {
+  background: rgba(94, 234, 212, 0.32);
+}
+
 .timer-mini-widget__close {
   flex-shrink: 0;
   width: 1.75rem;
@@ -1029,14 +1049,8 @@ body.timer-expanded-open {
   display: block;
   width: 100%;
   padding: 0.3rem 0.2rem 0.35rem;
-  border: none;
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.06);
-  cursor: pointer;
-}
-
-.timer-mini-widget__body:hover {
-  background: rgba(255, 255, 255, 0.12);
 }
 
 .timer-display--mini {
@@ -2364,6 +2378,22 @@ body.teacher-mode-active .slot {
   line-height: 1.35;
 }
 
+.app-dialog-modal__title--center {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.app-dialog-modal__card--compact {
+  width: max-content;
+  max-width: min(96vw, 420px);
+  padding: 1.35rem 1.45rem 1.25rem;
+}
+
+.app-dialog-modal__card--compact .app-dialog-modal__message[hidden] {
+  display: none;
+  margin: 0;
+}
+
 .app-dialog-modal__message {
   margin: 0 0 1rem;
   font-size: 1rem;
@@ -2417,6 +2447,17 @@ body.teacher-mode-active .slot {
 
 .app-dialog-modal__actions--single {
   justify-content: center;
+}
+
+.app-dialog-modal__actions--row {
+  flex-wrap: nowrap;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.app-dialog-modal__actions--row .tools-btn {
+  flex: 1 1 0;
+  min-width: 5.5rem;
 }
 
 .app-dialog-modal__actions .tools-btn {

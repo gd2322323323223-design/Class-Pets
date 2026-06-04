@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "98";
+  const APP_BUILD_VERSION = "99";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -1390,8 +1390,12 @@
     opts = opts || {};
     return new Promise(function (resolve) {
       const modal = document.getElementById("app-confirm-modal");
+      const card = modal ? modal.querySelector(".app-dialog-modal__card") : null;
       const titleEl = document.getElementById("app-confirm-title");
       const msgEl = document.getElementById("app-confirm-message");
+      const actionsEl = modal
+        ? modal.querySelector(".app-dialog-modal__actions")
+        : null;
       const okBtn = document.getElementById("btn-app-confirm-ok");
       const cancelBtn = document.getElementById("btn-app-confirm-cancel");
       if (!modal || !msgEl || !okBtn || !cancelBtn) {
@@ -1400,15 +1404,32 @@
       }
 
       if (titleEl) titleEl.textContent = opts.title || "請確認";
-      msgEl.textContent = message;
+      if (opts.hideMessage) {
+        msgEl.hidden = true;
+        msgEl.textContent = "";
+      } else {
+        msgEl.hidden = false;
+        msgEl.textContent = message;
+      }
       okBtn.textContent = opts.confirmText || "確定";
       cancelBtn.textContent = opts.cancelText || "取消";
       okBtn.classList.toggle("tools-btn--primary", !opts.danger);
       okBtn.classList.toggle("tools-btn--danger", !!opts.danger);
+      if (card) card.classList.toggle("app-dialog-modal__card--compact", !!opts.compact);
+      if (titleEl) {
+        titleEl.classList.toggle("app-dialog-modal__title--center", !!opts.titleCenter);
+      }
+      if (actionsEl) {
+        actionsEl.classList.toggle("app-dialog-modal__actions--row", !!opts.actionsRow);
+      }
 
       function finish(ok) {
         modal.hidden = true;
         document.body.classList.remove("app-dialog-open");
+        if (card) card.classList.remove("app-dialog-modal__card--compact");
+        if (titleEl) titleEl.classList.remove("app-dialog-modal__title--center");
+        if (actionsEl) actionsEl.classList.remove("app-dialog-modal__actions--row");
+        msgEl.hidden = false;
         okBtn.removeEventListener("click", onOk);
         cancelBtn.removeEventListener("click", onCancel);
         modal.removeEventListener("click", onBackdrop);
@@ -3247,17 +3268,12 @@
   function initTimerMiniWidget() {
     const widget = document.getElementById("timer-mini-widget");
     const closeBtn = document.getElementById("btn-timer-mini-close");
-    const expandBtn = document.getElementById("btn-timer-mini-expand");
+    const enlargeBtn = document.getElementById("btn-timer-mini-enlarge");
     const alarmBtn = document.getElementById("btn-timer-mini-alarm-close");
     const head = widget ? widget.querySelector(".timer-mini-widget__head") : null;
 
     if (closeBtn) closeBtn.addEventListener("click", hideTimerMiniWidget);
-    if (expandBtn) {
-      expandBtn.addEventListener("click", function () {
-        if (timerMiniDragMoved) return;
-        expandTimerDisplay();
-      });
-    }
+    if (enlargeBtn) enlargeBtn.addEventListener("click", expandTimerDisplay);
     if (alarmBtn) {
       alarmBtn.addEventListener("click", function () {
         stopTimerAlarmLoop();
@@ -3265,7 +3281,6 @@
       });
     }
 
-    let timerMiniDragMoved = false;
     let dragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -3275,7 +3290,6 @@
     function onDragStart(clientX, clientY) {
       if (!widget) return;
       dragging = true;
-      timerMiniDragMoved = false;
       dragStartX = clientX;
       dragStartY = clientY;
       const rect = widget.getBoundingClientRect();
@@ -3288,7 +3302,6 @@
       const dx = clientX - dragStartX;
       const dy = clientY - dragStartY;
       if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
-        timerMiniDragMoved = true;
         timerMiniUserMoved = true;
       }
       const margin = 8;
@@ -3306,14 +3319,24 @@
 
     if (head) {
       head.addEventListener("mousedown", function (ev) {
-        if (ev.target.closest(".timer-mini-widget__close")) return;
+        if (
+          ev.target.closest(".timer-mini-widget__close") ||
+          ev.target.closest(".timer-mini-widget__enlarge")
+        ) {
+          return;
+        }
         ev.preventDefault();
         onDragStart(ev.clientX, ev.clientY);
       });
       head.addEventListener(
         "touchstart",
         function (ev) {
-          if (ev.target.closest(".timer-mini-widget__close")) return;
+          if (
+            ev.target.closest(".timer-mini-widget__close") ||
+            ev.target.closest(".timer-mini-widget__enlarge")
+          ) {
+            return;
+          }
           if (!ev.touches || !ev.touches[0]) return;
           ev.preventDefault();
           onDragStart(ev.touches[0].clientX, ev.touches[0].clientY);
@@ -5497,8 +5520,12 @@
   }
 
   function closeMissionReminderManual() {
-    showAppConfirm("是否任務完成？", {
-      title: "任務",
+    showAppConfirm("", {
+      title: "任務是否完成？",
+      hideMessage: true,
+      titleCenter: true,
+      compact: true,
+      actionsRow: true,
       confirmText: "是",
       cancelText: "強制關閉",
     }).then(function (ok) {
