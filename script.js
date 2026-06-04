@@ -4,7 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "109";
+  const APP_BUILD_VERSION = "110";
+  const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
@@ -194,6 +195,7 @@
   let bulkSuccessIds = [];
   const SCORE_UNDO_MAX = 50;
   let scoreUndoStack = [];
+  let scoreRedoStack = [];
   let classProgressCelebratedThresholds = [];
   let classProgressPrevTotal = null;
   let classProgressBootstrapped = false;
@@ -547,37 +549,45 @@
       ? "v" + APP_BUILD_VERSION + "·"
       : "v" + APP_BUILD_VERSION;
     badge.classList.toggle("build-version-badge--dev", developerMode);
-    renderDeveloperPrivilegesTip();
+    renderBuildVersionTip();
   }
 
-  function renderDeveloperPrivilegesTip() {
-    const tip = document.getElementById("build-version-dev-tip");
+  function renderBuildVersionTip() {
+    const titleEl = document.getElementById("build-version-tip-title");
+    const updatedEl = document.getElementById("build-version-updated-at");
+    const devBlock = document.getElementById("build-version-dev-privileges-block");
     const list = document.getElementById("build-version-dev-tip-list");
-    if (!tip || !list) return;
-    list.innerHTML = "";
-    DEVELOPER_MODE_PRIVILEGES.forEach(function (line) {
-      const li = document.createElement("li");
-      li.textContent = line;
-      list.appendChild(li);
-    });
-    tip.hidden = !developerMode;
+    if (titleEl) {
+      titleEl.textContent = "版本 v" + APP_BUILD_VERSION;
+    }
+    if (updatedEl) {
+      updatedEl.textContent = "最新更新：" + APP_BUILD_UPDATED_AT;
+    }
+    if (devBlock) devBlock.hidden = !developerMode;
+    if (list) {
+      list.innerHTML = "";
+      DEVELOPER_MODE_PRIVILEGES.forEach(function (line) {
+        const li = document.createElement("li");
+        li.textContent = line;
+        list.appendChild(li);
+      });
+    }
   }
 
-  function initDeveloperPrivilegesTip() {
+  function initBuildVersionTip() {
     const wrap = document.querySelector(".build-version-badge-wrap");
-    const badge = document.querySelector(".build-version-badge");
     const tip = document.getElementById("build-version-dev-tip");
-    if (!wrap || !badge || !tip) return;
+    if (!wrap || !tip) return;
 
     let hideTipTimer = null;
 
     function showTip() {
-      if (!developerMode) return;
+      if (!teacherMode) return;
       if (hideTipTimer !== null) {
         clearTimeout(hideTipTimer);
         hideTipTimer = null;
       }
-      renderDeveloperPrivilegesTip();
+      renderBuildVersionTip();
       tip.hidden = false;
     }
 
@@ -593,7 +603,7 @@
     wrap.addEventListener("mouseleave", scheduleHideTip);
     tip.addEventListener("mouseenter", showTip);
     tip.addEventListener("mouseleave", scheduleHideTip);
-    renderDeveloperPrivilegesTip();
+    renderBuildVersionTip();
   }
 
   function tryActivateDeveloperMode() {
@@ -975,6 +985,7 @@
 
   function resetClassSwitchSessionState() {
     scoreUndoStack = [];
+    scoreRedoStack = [];
     bulkPickActive = false;
     bulkSelectedIds = [];
     bulkSuccessIds = [];
@@ -985,7 +996,7 @@
     closeGroupMembersModal();
     closeGroupManageModal();
     closeGrowthJournalModal();
-    refreshScoreUndoButton();
+    refreshScoreUndoButtons();
     updateBulkPickUI();
   }
 
@@ -1093,7 +1104,12 @@
           s.score = clampScore(coerceCloudNumber(s.score, 0));
           s.lives = clampLives(coerceCloudNumber(s.lives, LIVES_DEFAULT));
           s.beamHueBase = normalizeBeamHueBase(s.beamHueBase, s.id);
-          s.emoji = DEFAULT_EMOJI;
+          if (isSlotSleeping(s)) {
+            clearSlotEmojiTimer(s.id);
+            s.emoji = EMOJI_SLEEP;
+          } else {
+            s.emoji = DEFAULT_EMOJI;
+          }
         });
       } else if (options.initial) {
         slots = createDefaultSlots();
@@ -2669,32 +2685,51 @@
     }
   }
 
+  function getSlotDisplayEmoji(slot) {
+    if (!slot) return DEFAULT_EMOJI;
+    if (isSlotSleeping(slot)) return EMOJI_SLEEP;
+    return slot.emoji || DEFAULT_EMOJI;
+  }
+
   function updateSlotEmojiDisplay(slotId) {
     const slot = getSlotById(slotId);
     if (!slot) return;
     const el = document.querySelector('.slot[data-slot-id="' + slotId + '"]');
     const footerEmoji = el && el.querySelector(".slot__footer-part--emoji");
     if (footerEmoji) {
-      footerEmoji.textContent = slot.emoji || DEFAULT_EMOJI;
+      footerEmoji.textContent = getSlotDisplayEmoji(slot);
     }
+  }
+
+  function setSlotSleepEmoji(slotId) {
+    const slot = getSlotById(slotId);
+    if (!slot) return;
+    clearSlotEmojiTimer(slotId);
+    slot.emoji = EMOJI_SLEEP;
+    updateSlotEmojiDisplay(slotId);
   }
 
   function setSlotReactionEmoji(slotId, emoji) {
     const slot = getSlotById(slotId);
     if (!slot) return;
+    if (isSlotSleeping(slot)) return;
 
     clearSlotEmojiTimer(slotId);
     slot.emoji = emoji;
     updateSlotEmojiDisplay(slotId);
 
     slotEmojiTimers[slotId] = setTimeout(function () {
-      slot.emoji = DEFAULT_EMOJI;
+      const current = getSlotById(slotId);
+      if (!current || isSlotSleeping(current)) return;
+      current.emoji = DEFAULT_EMOJI;
       updateSlotEmojiDisplay(slotId);
       delete slotEmojiTimers[slotId];
     }, EMOJI_REACTION_MS);
   }
 
   function applyScoreReaction(slotId, delta) {
+    const slot = getSlotById(slotId);
+    if (!slot || isSlotSleeping(slot)) return;
     if (delta > 0) {
       setSlotReactionEmoji(slotId, EMOJI_SCORE_UP);
     } else if (delta < 0) {
@@ -3993,11 +4028,12 @@
   }
 
   function pushScoreUndoSnapshot() {
+    scoreRedoStack = [];
     scoreUndoStack.push(captureScoreUndoSnapshot());
     if (scoreUndoStack.length > SCORE_UNDO_MAX) {
       scoreUndoStack.shift();
     }
-    refreshScoreUndoButton();
+    refreshScoreUndoButtons();
   }
 
   function applyScoreUndoSnapshot(snapshot) {
@@ -4024,16 +4060,31 @@
       showAppToast("沒有可復原的加減分行動。", { variant: "warn" });
       return;
     }
+    scoreRedoStack.push(captureScoreUndoSnapshot());
     const snapshot = scoreUndoStack.pop();
     applyScoreUndoSnapshot(snapshot);
-    refreshScoreUndoButton();
+    refreshScoreUndoButtons();
   }
 
-  function refreshScoreUndoButton() {
-    const btn = document.getElementById("btn-score-undo");
-    if (!btn) return;
-    btn.hidden = !teacherMode;
-    btn.disabled = scoreUndoStack.length === 0;
+  function redoLastScoreAction() {
+    if (!teacherMode) return;
+    if (!scoreRedoStack.length) {
+      showAppToast("沒有可取消復原的動作。", { variant: "warn" });
+      return;
+    }
+    scoreUndoStack.push(captureScoreUndoSnapshot());
+    const snapshot = scoreRedoStack.pop();
+    applyScoreUndoSnapshot(snapshot);
+    refreshScoreUndoButtons();
+  }
+
+  function refreshScoreUndoButtons() {
+    const wrap = document.getElementById("class-progress-undo-redo");
+    const undoBtn = document.getElementById("btn-score-undo");
+    const redoBtn = document.getElementById("btn-score-redo");
+    if (wrap) wrap.hidden = !teacherMode;
+    if (undoBtn) undoBtn.disabled = scoreUndoStack.length === 0;
+    if (redoBtn) redoBtn.disabled = scoreRedoStack.length === 0;
   }
 
   function scoreToastStudentLabel(slot) {
@@ -4183,7 +4234,7 @@
 
     document.body.classList.toggle("bulk-pick-active", bulkPickActive);
     syncBulkPickModalPhase();
-    refreshScoreUndoButton();
+    refreshScoreUndoButtons();
     slots.forEach(function (slot) {
       const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
       if (el) updateSlotBulkClasses(el, slot);
@@ -6861,7 +6912,7 @@
       saveSlots();
       playLifeWarningSound();
       if (slot.lives === 0) {
-        setSlotReactionEmoji(slotId, EMOJI_SLEEP);
+        setSlotSleepEmoji(slotId);
       } else {
         setSlotReactionEmoji(slotId, EMOJI_SAD);
       }
@@ -6966,8 +7017,8 @@
         wakeBtn = document.createElement("button");
         wakeBtn.type = "button";
         wakeBtn.className = "slot__life-wakeup";
-        wakeBtn.textContent = "睡醒";
-        wakeBtn.setAttribute("aria-label", "睡醒並恢復生命值");
+        wakeBtn.textContent = "睡覺";
+        wakeBtn.setAttribute("aria-label", "睡覺起床並恢復生命值");
         wakeBtn.addEventListener("click", function (ev) {
           ev.stopPropagation();
           wakeUpSlot(slot.id);
@@ -7181,7 +7232,7 @@
     const footerScore = el.querySelector(".slot__footer-part--score");
 
     if (footerEmoji) {
-      footerEmoji.textContent = slot.emoji || DEFAULT_EMOJI;
+      footerEmoji.textContent = getSlotDisplayEmoji(slot);
     }
     if (footerName) {
       footerName.textContent = slot.name;
@@ -7254,7 +7305,7 @@
     const quickMenu = el.querySelector(".score-quick-menu");
 
     if (footerEmoji) {
-      footerEmoji.textContent = slot.emoji || DEFAULT_EMOJI;
+      footerEmoji.textContent = getSlotDisplayEmoji(slot);
       footerEmoji.setAttribute("aria-label", "狀態表情");
     }
 
@@ -7432,6 +7483,7 @@
     syncToolsSidebarEditHint();
     syncTeacherToolsPanelsVisibility();
     syncDeveloperToolsVisibility();
+    renderBuildVersionTip();
     if (btnTeacherMode) {
       btnTeacherMode.classList.toggle("is-active", teacherMode);
       const labelEl = document.getElementById("teacher-mode-btn-label");
@@ -7447,7 +7499,7 @@
       );
     }
     updateBulkPickUI();
-    refreshScoreUndoButton();
+    refreshScoreUndoButtons();
     const studentAddBtn = document.getElementById("btn-student-add");
     const studentRemoveBtn = document.getElementById("btn-student-remove");
     const gardenInput = document.getElementById("garden-name-input");
@@ -7734,7 +7786,7 @@
   function continueBoot() {
     updateBuildVersionBadge();
     initBuildVersionBadgeSecret();
-    initDeveloperPrivilegesTip();
+    initBuildVersionTip();
     refreshDeveloperModeUI();
     syncDeveloperToolsVisibility();
     showFileProtocolBanner();
@@ -7759,8 +7811,12 @@
     }
 
     const btnScoreUndo = document.getElementById("btn-score-undo");
+    const btnScoreRedo = document.getElementById("btn-score-redo");
     if (btnScoreUndo) {
       btnScoreUndo.addEventListener("click", undoLastScoreAction);
+    }
+    if (btnScoreRedo) {
+      btnScoreRedo.addEventListener("click", redoLastScoreAction);
     }
 
     document.addEventListener("keydown", function (ev) {
@@ -7769,6 +7825,11 @@
       if ((ev.ctrlKey || ev.metaKey) && key === "z" && !ev.shiftKey) {
         ev.preventDefault();
         undoLastScoreAction();
+        return;
+      }
+      if ((ev.ctrlKey || ev.metaKey) && key === "y") {
+        ev.preventDefault();
+        redoLastScoreAction();
       }
     });
     document.addEventListener("click", function (ev) {

@@ -1882,8 +1882,30 @@ body.teacher-mode-active .build-version-badge-wrap {
 }
 
 .build-version-dev-tip__title {
-  margin: 0 0 0.35rem;
+  margin: 0 0 0.25rem;
   font-size: 0.7rem;
+  font-weight: 900;
+  color: #fde68a;
+  letter-spacing: 0.04em;
+}
+
+.build-version-updated-at {
+  margin: 0 0 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #cbd5e1;
+  letter-spacing: 0.02em;
+}
+
+.build-version-dev-privileges {
+  margin-top: 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.build-version-dev-privileges__label {
+  margin: 0 0 0.3rem;
+  font-size: 0.66rem;
   font-weight: 900;
   color: #fde68a;
   letter-spacing: 0.04em;
@@ -1955,11 +1977,19 @@ body.teacher-mode-active .slot {
   white-space: nowrap;
 }
 
-.class-progress-undo-btn {
+.class-progress-undo-redo {
   position: absolute;
   top: 0.4rem;
   right: 0.45rem;
   z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  max-width: min(92vw, 420px);
+}
+
+.class-progress-undo-btn {
   margin: 0;
   padding: 0.28rem 0.55rem;
   border: 1.5px solid rgba(124, 45, 18, 0.35);
@@ -4948,9 +4978,22 @@ body.teacher-mode-active
   filter: brightness(1.04);
 }
 
-.slot.is-sleeping {
+.slot.is-sleeping .slot__stage {
   filter: grayscale(80%);
-  opacity: 0.6;
+  opacity: 0.65;
+}
+
+.slot.is-sleeping .slot__lives,
+.slot.is-sleeping .slot__footer {
+  position: relative;
+  z-index: 3;
+  filter: none;
+  opacity: 1;
+}
+
+.slot.is-sleeping .slot__footer-part--emoji {
+  font-size: 1.35rem;
+  filter: none;
 }
 
 .slot.is-sleeping:hover {

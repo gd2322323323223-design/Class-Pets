@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=109" />
+  <link rel="stylesheet" href="style.css?v=110" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -45,15 +45,19 @@
   </div>
 
   <div class="build-version-badge-wrap">
-    <div class="build-version-badge" aria-label="版本號">v109</div>
+    <div class="build-version-badge" aria-label="版本號">v110</div>
     <div
       id="build-version-dev-tip"
       class="build-version-dev-tip"
       role="tooltip"
       hidden
     >
-      <p class="build-version-dev-tip__title">開發人員專屬權限</p>
-      <ul id="build-version-dev-tip-list" class="build-version-dev-tip__list"></ul>
+      <p id="build-version-tip-title" class="build-version-dev-tip__title">版本 v110</p>
+      <p id="build-version-updated-at" class="build-version-updated-at"></p>
+      <div id="build-version-dev-privileges-block" class="build-version-dev-privileges" hidden>
+        <p class="build-version-dev-privileges__label">開發人員專屬權限</p>
+        <ul id="build-version-dev-tip-list" class="build-version-dev-tip__list"></ul>
+      </div>
     </div>
   </div>
 
@@ -1124,15 +1128,26 @@
       class="class-progress-container"
       aria-label="全班守護神獸經驗值"
     >
-      <button
-        type="button"
-        id="btn-score-undo"
-        class="class-progress-undo-btn"
-        hidden
-        title="復原上一次加減分（Ctrl+Z）"
-      >
-        ↩ 復原分數
-      </button>
+      <div id="class-progress-undo-redo" class="class-progress-undo-redo" hidden>
+        <button
+          type="button"
+          id="btn-score-redo"
+          class="class-progress-undo-btn class-progress-redo-btn"
+          title="取消復原（Ctrl+Y）"
+          disabled
+        >
+          ↪ 取消復原
+        </button>
+        <button
+          type="button"
+          id="btn-score-undo"
+          class="class-progress-undo-btn"
+          title="復原上一次加減分（Ctrl+Z）"
+          disabled
+        >
+          ↩ 復原分數
+        </button>
+      </div>
       <p id="class-progress-label" class="class-progress-label">
         全班總得分 (Lv.1)：0 / 500
       </p>
@@ -1171,6 +1186,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=109"></script>
+  <script src="script.js?v=110"></script>
 </body>
 </html>
