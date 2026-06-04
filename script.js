@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "97";
+  const APP_BUILD_VERSION = "98";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -5491,8 +5491,23 @@
     saveMissionState();
   }
 
+  function forceCloseMissionReminder() {
+    stopScoreKingMissionSilently();
+    hideMissionReminder();
+  }
+
   function closeMissionReminderManual() {
-    dismissMissionReminderPanel();
+    showAppConfirm("是否任務完成？", {
+      title: "任務",
+      confirmText: "是",
+      cancelText: "強制關閉",
+    }).then(function (ok) {
+      if (ok) {
+        onMissionReminderGoalAchieved();
+        return;
+      }
+      forceCloseMissionReminder();
+    });
   }
 
   function onMissionReminderToggleClick() {
@@ -5950,7 +5965,6 @@
 
   function initDailyMissionModule() {
     const drawBtn = document.getElementById("btn-daily-mission-draw");
-    const endBtn = document.getElementById("btn-mission-end");
     const reminderClose = document.getElementById("btn-mission-reminder-close");
     const goalAchievedBtn = document.getElementById("btn-mission-goal-achieved");
     const pickBtn = document.getElementById("btn-mission-pick");
@@ -5974,7 +5988,6 @@
         if (ev.target === pickModal) closeMissionPickModal();
       });
     }
-    if (endBtn) endBtn.addEventListener("click", endScoreKingMission);
     if (successClose) {
       successClose.addEventListener("click", closeMissionSuccessOutcome);
     }
