@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "106";
+  const APP_BUILD_VERSION = "107";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
   const DEV_MODE_BADGE_CLICK_MS = 900;
@@ -1424,6 +1424,20 @@
       bodyEl.hidden = !willOpen;
       if (panelEl) panelEl.classList.toggle("is-open", willOpen);
       toggleEl.setAttribute("aria-expanded", willOpen ? "true" : "false");
+      if (willOpen) {
+        requestAnimationFrame(function () {
+          const scrollHost = bodyEl.closest(".tools-sidebar__scroll");
+          if (scrollHost && panelEl) {
+            const hostRect = scrollHost.getBoundingClientRect();
+            const panelRect = panelEl.getBoundingClientRect();
+            if (panelRect.bottom > hostRect.bottom - 8) {
+              panelEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            }
+          } else {
+            bodyEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          }
+        });
+      }
     });
   }
 
