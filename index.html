@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=100" />
+  <link rel="stylesheet" href="style.css?v=101" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -791,8 +791,23 @@
       <span id="timer-mini-mode" class="timer-mini-widget__mode">計時</span>
       <button
         type="button"
+        class="timer-toolbar-btn js-timer-sound-toggle is-on"
+        aria-pressed="true"
+        aria-label="開關音效"
+      >
+        🔔 音效
+      </button>
+      <button
+        type="button"
+        class="timer-toolbar-btn js-timer-interval-cue"
+        aria-label="設定提示間隔"
+      >
+        ⏰ 提示
+      </button>
+      <button
+        type="button"
         id="btn-timer-mini-enlarge"
-        class="timer-mini-widget__enlarge"
+        class="timer-toolbar-btn"
         aria-label="放大計時器"
       >
         放大
@@ -800,7 +815,7 @@
       <button
         type="button"
         id="btn-timer-mini-close"
-        class="timer-mini-widget__close"
+        class="timer-toolbar-btn timer-toolbar-btn--icon"
         aria-label="關閉計時器視窗"
       >
         ✕
@@ -814,18 +829,6 @@
       >
         00:00
       </div>
-    </div>
-    <div class="timer-widget-sound-controls">
-      <button
-        type="button"
-        class="timer-widget-sound-btn js-timer-sound-toggle is-on"
-        aria-pressed="true"
-      >
-        🔔 音效：開
-      </button>
-      <button type="button" class="timer-widget-sound-btn js-timer-interval-cue">
-        ⏰ 提示：每 1 分鐘
-      </button>
     </div>
     <button
       type="button"
@@ -843,28 +846,42 @@
     hidden
     role="dialog"
     aria-modal="true"
-    aria-labelledby="timer-expanded-label"
+    aria-labelledby="timer-expanded-mode"
   >
     <div class="timer-expanded-modal__card">
       <div class="timer-expanded-modal__toolbar">
         <button
           type="button"
           id="btn-timer-shrink"
-          class="timer-expanded-modal__shrink"
+          class="timer-toolbar-btn"
           aria-label="縮小計時器"
         >
           🔽 縮小
         </button>
         <button
           type="button"
+          class="timer-toolbar-btn js-timer-sound-toggle is-on"
+          aria-pressed="true"
+          aria-label="開關音效"
+        >
+          🔔 音效
+        </button>
+        <button
+          type="button"
+          class="timer-toolbar-btn js-timer-interval-cue"
+          aria-label="設定提示間隔"
+        >
+          ⏰ 提示
+        </button>
+        <button
+          type="button"
           id="btn-timer-expanded-close"
-          class="timer-expanded-modal__close"
+          class="timer-toolbar-btn timer-toolbar-btn--icon"
           aria-label="關閉計時器"
         >
           ✕
         </button>
       </div>
-      <p id="timer-expanded-label" class="timer-expanded-modal__label">課堂計時器</p>
       <p id="timer-expanded-mode" class="timer-expanded-modal__mode">計時</p>
       <div
         id="timer-display-expanded"
@@ -872,18 +889,6 @@
         aria-live="polite"
       >
         00:00
-      </div>
-      <div class="timer-widget-sound-controls timer-widget-sound-controls--expanded">
-        <button
-          type="button"
-          class="timer-widget-sound-btn js-timer-sound-toggle is-on"
-          aria-pressed="true"
-        >
-          🔔 音效：開
-        </button>
-        <button type="button" class="timer-widget-sound-btn js-timer-interval-cue">
-          ⏰ 提示：每 1 分鐘
-        </button>
       </div>
       <button
         type="button"
@@ -1095,6 +1100,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=100"></script>
+  <script src="script.js?v=101"></script>
 </body>
 </html>

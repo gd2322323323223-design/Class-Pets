@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "100";
+  const APP_BUILD_VERSION = "101";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -3332,8 +3332,8 @@
     if (head) {
       head.addEventListener("mousedown", function (ev) {
         if (
-          ev.target.closest(".timer-mini-widget__close") ||
-          ev.target.closest(".timer-mini-widget__enlarge")
+          ev.target.closest(".timer-toolbar-btn") ||
+          ev.target.closest("#btn-timer-mini-close")
         ) {
           return;
         }
@@ -3344,8 +3344,8 @@
         "touchstart",
         function (ev) {
           if (
-            ev.target.closest(".timer-mini-widget__close") ||
-            ev.target.closest(".timer-mini-widget__enlarge")
+            ev.target.closest(".timer-toolbar-btn") ||
+            ev.target.closest("#btn-timer-mini-close")
           ) {
             return;
           }
@@ -3421,8 +3421,27 @@
     timerAlarmIntervalId = setInterval(playTimerAlarmFallback, 1400);
   }
 
+  const TIMER_INTERVAL_CUE_SEC_MIN = 1;
+  const TIMER_INTERVAL_CUE_SEC_MAX = 3600;
+
+  function clampTimerIntervalCueSec(sec) {
+    const n = Math.round(Number(sec));
+    if (!Number.isFinite(n) || n < TIMER_INTERVAL_CUE_SEC_MIN) {
+      return 60;
+    }
+    return Math.min(TIMER_INTERVAL_CUE_SEC_MAX, n);
+  }
+
   function getTimerIntervalMs() {
-    return timerIntervalCueSec === 30 ? 30000 : 60000;
+    return clampTimerIntervalCueSec(timerIntervalCueSec) * 1000;
+  }
+
+  function formatTimerIntervalButtonLabel(sec) {
+    sec = clampTimerIntervalCueSec(sec);
+    if (sec >= 60 && sec % 60 === 0) {
+      return "⏰ " + sec / 60 + "分";
+    }
+    return "⏰ " + sec + "秒";
   }
 
   function getTimerSessionElapsedMs() {
@@ -3473,8 +3492,9 @@
 
     const intervalRaw =
       data.timerIntervalCue != null ? String(data.timerIntervalCue) : "";
-    if (intervalRaw === "30") timerIntervalCueSec = 30;
-    else if (intervalRaw === "60") timerIntervalCueSec = 60;
+    if (intervalRaw) {
+      timerIntervalCueSec = clampTimerIntervalCueSec(parseInt(intervalRaw, 10));
+    }
   }
 
   function saveTimerSettings() {
@@ -3494,15 +3514,27 @@
     document.querySelectorAll(".js-timer-sound-toggle").forEach(function (btn) {
       btn.classList.toggle("is-on", timerSoundEnabled);
       btn.setAttribute("aria-pressed", timerSoundEnabled ? "true" : "false");
-      btn.textContent = timerSoundEnabled ? "🔔 音效：開" : "🔕 音效：關";
+      btn.textContent = timerSoundEnabled ? "🔔 音效" : "🔕 音效";
     });
     document.querySelectorAll(".js-timer-interval-cue").forEach(function (btn) {
-      btn.textContent =
-        timerIntervalCueSec === 30
-          ? "⏰ 提示：每 30 秒"
-          : "⏰ 提示：每 1 分鐘";
+      btn.textContent = formatTimerIntervalButtonLabel(timerIntervalCueSec);
       btn.disabled = !timerSoundEnabled;
       btn.setAttribute("aria-disabled", timerSoundEnabled ? "false" : "true");
+    });
+  }
+
+  function promptTimerIntervalCueSec() {
+    if (!timerSoundEnabled) return Promise.resolve();
+    return showAppPrompt(
+      "請輸入每隔幾秒播放一次提示音（1～3600）",
+      String(timerIntervalCueSec),
+      { title: "設定提示間隔", confirmText: "確定" }
+    ).then(function (val) {
+      if (val == null) return;
+      timerIntervalCueSec = clampTimerIntervalCueSec(val);
+      resetTimerIntervalMarksFromElapsed();
+      saveTimerSettings();
+      updateTimerSoundControlsUI();
     });
   }
 
@@ -3516,11 +3548,7 @@
     });
     document.querySelectorAll(".js-timer-interval-cue").forEach(function (btn) {
       btn.addEventListener("click", function () {
-        if (!timerSoundEnabled) return;
-        timerIntervalCueSec = timerIntervalCueSec === 30 ? 60 : 30;
-        resetTimerIntervalMarksFromElapsed();
-        saveTimerSettings();
-        updateTimerSoundControlsUI();
+        void promptTimerIntervalCueSec();
       });
     });
     updateTimerSoundControlsUI();
@@ -6309,7 +6337,37 @@
     if (restoreBtn) restoreBtn.addEventListener("click", onRestoreClassSaveCodeClick);
   }
 
+  const TOOLS_PANEL_NAMED_THEMES = [
+    "mission",
+    "lucky",
+    "timer",
+    "backup",
+    "class-setup",
+    "class-code",
+  ];
+  const TOOLS_PANEL_AUTO_ACCENTS = [
+    "tools-panel--accent-indigo",
+    "tools-panel--accent-rose",
+    "tools-panel--accent-amber",
+    "tools-panel--accent-cyan",
+  ];
+
+  function initToolsPanelAutoAccents() {
+    let autoIndex = 0;
+    document.querySelectorAll(".tools-sidebar__scroll > .tools-panel").forEach(function (panel) {
+      const hasNamed = TOOLS_PANEL_NAMED_THEMES.some(function (key) {
+        return panel.classList.contains("tools-panel--" + key);
+      });
+      if (hasNamed) return;
+      panel.classList.add(
+        TOOLS_PANEL_AUTO_ACCENTS[autoIndex % TOOLS_PANEL_AUTO_ACCENTS.length]
+      );
+      autoIndex += 1;
+    });
+  }
+
   function initToolsSidebar() {
+    initToolsPanelAutoAccents();
     const toggle = document.getElementById("btn-tools-toggle");
     const closeBtn = document.getElementById("btn-tools-close");
     const overlay = document.getElementById("tools-overlay");
