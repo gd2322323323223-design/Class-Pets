@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "101";
+  const APP_BUILD_VERSION = "102";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -13,6 +13,7 @@
   const MIN_SLOT_COUNT = 1;
   const MAX_SLOT_COUNT = 40;
   const DEFAULT_GARDEN_NAME = "讚賞園地";
+  const LEGACY_GARDEN_NAME = "欣賞園地";
   const DEFAULT_NAME = "待命名";
   const DEFAULT_EMOJI = "😄";
   const EMOJI_SCORE_UP = "😍";
@@ -984,7 +985,7 @@
       typeof data.classDisplay.gardenName === "string" &&
       data.classDisplay.gardenName.trim()
     ) {
-      gardenDisplayName = data.classDisplay.gardenName.trim();
+      gardenDisplayName = normalizeGardenDisplayName(data.classDisplay.gardenName);
     } else {
       gardenDisplayName = DEFAULT_GARDEN_NAME;
     }
@@ -1723,6 +1724,12 @@
     return (base + beamIndex * 41) % 360;
   }
 
+  function normalizeGardenDisplayName(name) {
+    const trimmed = (name || "").trim();
+    if (!trimmed || trimmed === LEGACY_GARDEN_NAME) return DEFAULT_GARDEN_NAME;
+    return trimmed;
+  }
+
   function updateDashHeaderTitle() {
     const outline = document.querySelector(".dash-header__title-outline");
     const gradient = document.querySelector(".dash-header__title-gradient");
@@ -1744,7 +1751,7 @@
   function saveGardenDisplayName(rawName) {
     if (!teacherMode && !ensureTeacherModeOn()) return;
     const trimmed = (rawName || "").trim();
-    gardenDisplayName = trimmed || DEFAULT_GARDEN_NAME;
+    gardenDisplayName = normalizeGardenDisplayName(trimmed);
     updateDashHeaderTitle();
     syncGardenNameInput();
     scheduleCloudSync();
@@ -3523,15 +3530,90 @@
     });
   }
 
+  function splitTimerIntervalCueToMinSec(totalSec) {
+    totalSec = clampTimerIntervalCueSec(totalSec);
+    return {
+      min: Math.floor(totalSec / 60),
+      sec: totalSec % 60,
+    };
+  }
+
+  function readTimerIntervalCueFromMinSecInputs(minEl, secEl) {
+    if (!minEl || !secEl) return clampTimerIntervalCueSec(timerIntervalCueSec);
+    let min = parseInt(minEl.value, 10);
+    let sec = parseInt(secEl.value, 10);
+    if (Number.isNaN(min)) min = 0;
+    if (Number.isNaN(sec)) sec = 0;
+    min = Math.max(0, Math.min(60, min));
+    sec = Math.max(0, Math.min(59, sec));
+    let total = min * 60 + sec;
+    if (total < TIMER_INTERVAL_CUE_SEC_MIN) total = TIMER_INTERVAL_CUE_SEC_MIN;
+    if (total > TIMER_INTERVAL_CUE_SEC_MAX) total = TIMER_INTERVAL_CUE_SEC_MAX;
+    return total;
+  }
+
+  function showTimerIntervalModal() {
+    return new Promise(function (resolve) {
+      const modal = document.getElementById("timer-interval-modal");
+      const minEl = document.getElementById("timer-interval-min");
+      const secEl = document.getElementById("timer-interval-sec");
+      const okBtn = document.getElementById("btn-timer-interval-ok");
+      const cancelBtn = document.getElementById("btn-timer-interval-cancel");
+      if (!modal || !minEl || !secEl || !okBtn || !cancelBtn) {
+        resolve(null);
+        return;
+      }
+
+      const parts = splitTimerIntervalCueToMinSec(timerIntervalCueSec);
+      minEl.value = String(parts.min);
+      secEl.value = String(parts.sec);
+
+      function finish(val) {
+        modal.hidden = true;
+        document.body.classList.remove("app-dialog-open");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        modal.removeEventListener("click", onBackdrop);
+        document.removeEventListener("keydown", onKeydown);
+        resolve(val);
+      }
+
+      function onOk() {
+        finish(readTimerIntervalCueFromMinSecInputs(minEl, secEl));
+      }
+
+      function onCancel() {
+        finish(null);
+      }
+
+      function onBackdrop(ev) {
+        if (ev.target === modal) finish(null);
+      }
+
+      function onKeydown(ev) {
+        if (ev.key === "Escape") finish(null);
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          onOk();
+        }
+      }
+
+      modal.hidden = false;
+      document.body.classList.add("app-dialog-open");
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      modal.addEventListener("click", onBackdrop);
+      document.addEventListener("keydown", onKeydown);
+      minEl.focus();
+      minEl.select();
+    });
+  }
+
   function promptTimerIntervalCueSec() {
     if (!timerSoundEnabled) return Promise.resolve();
-    return showAppPrompt(
-      "請輸入每隔幾秒播放一次提示音（1～3600）",
-      String(timerIntervalCueSec),
-      { title: "設定提示間隔", confirmText: "確定" }
-    ).then(function (val) {
-      if (val == null) return;
-      timerIntervalCueSec = clampTimerIntervalCueSec(val);
+    return showTimerIntervalModal().then(function (sec) {
+      if (sec == null) return;
+      timerIntervalCueSec = sec;
       resetTimerIntervalMarksFromElapsed();
       saveTimerSettings();
       updateTimerSoundControlsUI();
@@ -6976,8 +7058,22 @@
     }
   }
 
+  function syncTeacherToolsPanelsVisibility() {
+    document.querySelectorAll(".js-teacher-tools-panel").forEach(function (panel) {
+      panel.hidden = !teacherMode;
+      if (!teacherMode) {
+        const toggle = panel.querySelector(".tools-panel__toggle");
+        const body = panel.querySelector(".tools-panel__collapsible-body");
+        panel.classList.remove("is-open");
+        if (toggle) toggle.setAttribute("aria-expanded", "false");
+        if (body) body.hidden = true;
+      }
+    });
+  }
+
   function refreshTeacherModeUI() {
     document.body.classList.toggle("teacher-mode-active", teacherMode);
+    syncTeacherToolsPanelsVisibility();
     if (btnTeacherMode) {
       btnTeacherMode.classList.toggle("is-active", teacherMode);
       const labelEl = document.getElementById("teacher-mode-btn-label");

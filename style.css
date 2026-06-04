@@ -597,6 +597,19 @@ body.tools-sidebar-open .tools-tab {
   text-shadow: 0 2px 6px rgba(15, 118, 110, 0.45);
 }
 
+.tools-panel--class-setup .tools-panel__desc,
+.tools-panel--class-setup .tools-panel__desc--on-teal,
+.tools-panel--class-setup #student-count-label {
+  color: rgba(236, 254, 255, 0.94);
+  text-shadow: 0 1px 3px rgba(15, 118, 110, 0.35);
+}
+
+.tools-panel--class-setup .tools-field > span {
+  color: #f0fdfa;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(15, 118, 110, 0.3);
+}
+
 .tools-panel--class-code {
   margin-bottom: 0;
   background: linear-gradient(145deg, #3b82f6 0%, #1d4ed8 52%, #1e3a8a 100%);
@@ -779,6 +792,16 @@ body.tools-sidebar-open .tools-tab {
   display: flex;
   gap: 0.65rem;
   margin-bottom: 0.75rem;
+}
+
+.countdown-setup--dialog {
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.countdown-setup--dialog .tools-field--inline > span {
+  color: var(--wood-text-muted);
+  font-weight: 800;
 }
 
 .tools-input {

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=101" />
+  <link rel="stylesheet" href="style.css?v=102" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -253,7 +253,11 @@
       </div>
     </section>
 
-    <section class="tools-panel tools-panel--backup tools-panel--collapsible" aria-labelledby="tools-backup-title">
+    <section
+      class="tools-panel tools-panel--backup tools-panel--collapsible js-teacher-tools-panel"
+      aria-labelledby="tools-backup-title"
+      hidden
+    >
       <button
         type="button"
         id="btn-backup-panel-toggle"
@@ -300,7 +304,11 @@
       </div>
     </section>
 
-    <section class="tools-panel tools-panel--class-setup tools-panel--collapsible" aria-labelledby="tools-class-setup-title">
+    <section
+      class="tools-panel tools-panel--class-setup tools-panel--collapsible js-teacher-tools-panel"
+      aria-labelledby="tools-class-setup-title"
+      hidden
+    >
       <button
         type="button"
         id="btn-class-setup-panel-toggle"
@@ -326,7 +334,7 @@
             type="text"
             autocomplete="off"
             spellcheck="false"
-            placeholder="欣賞園地"
+            placeholder="讚賞園地"
             maxlength="32"
             readonly
           />
@@ -343,11 +351,15 @@
             － 刪減學生方框
           </button>
         </div>
-        <p class="tools-panel__desc">編輯模式下可調整人數、園地名稱；刪減須輸入方框編號與密碼，後方編號會自動遞補。</p>
+        <p class="tools-panel__desc tools-panel__desc--on-teal">編輯模式下可調整人數、園地名稱；刪減須輸入方框編號與密碼，後方編號會自動遞補。</p>
       </div>
     </section>
 
-    <section class="tools-panel tools-panel--class-code tools-panel--collapsible" aria-labelledby="tools-class-code-title">
+    <section
+      class="tools-panel tools-panel--class-code tools-panel--collapsible js-teacher-tools-panel"
+      aria-labelledby="tools-class-code-title"
+      hidden
+    >
       <button
         type="button"
         id="btn-class-code-panel-toggle"
@@ -454,6 +466,48 @@
       <div class="app-dialog-modal__actions">
         <button type="button" id="btn-app-prompt-ok" class="tools-btn tools-btn--primary">確定</button>
         <button type="button" id="btn-app-prompt-cancel" class="tools-btn tools-btn--ghost">取消</button>
+      </div>
+    </div>
+  </div>
+
+  <div
+    id="timer-interval-modal"
+    class="app-dialog-modal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="timer-interval-title"
+  >
+    <div class="app-dialog-modal__card modal-surface">
+      <h2 id="timer-interval-title" class="app-dialog-modal__title">設定提示間隔</h2>
+      <p class="app-dialog-modal__message">每隔以下時間播放提示音</p>
+      <div class="countdown-setup countdown-setup--dialog">
+        <label class="tools-field tools-field--inline" for="timer-interval-min">
+          <span>分</span>
+          <input
+            id="timer-interval-min"
+            class="tools-input tools-input--sm"
+            type="number"
+            min="0"
+            max="60"
+            value="1"
+          />
+        </label>
+        <label class="tools-field tools-field--inline" for="timer-interval-sec">
+          <span>秒</span>
+          <input
+            id="timer-interval-sec"
+            class="tools-input tools-input--sm"
+            type="number"
+            min="0"
+            max="59"
+            value="0"
+          />
+        </label>
+      </div>
+      <div class="app-dialog-modal__actions">
+        <button type="button" id="btn-timer-interval-ok" class="tools-btn tools-btn--primary">確定</button>
+        <button type="button" id="btn-timer-interval-cancel" class="tools-btn tools-btn--ghost">取消</button>
       </div>
     </div>
   </div>
@@ -1042,8 +1096,8 @@
         <div class="dash-header__badge">
           <span class="dash-header__deco" aria-hidden="true">⭐</span>
           <h1 class="dash-header__title" title="編輯模式下連擊兩下可更改園地名稱">
-            <span class="dash-header__title-outline" aria-hidden="true">欣賞園地</span>
-            <span class="dash-header__title-gradient">欣賞園地</span>
+            <span class="dash-header__title-outline" aria-hidden="true">讚賞園地</span>
+            <span class="dash-header__title-gradient">讚賞園地</span>
           </h1>
           <span class="dash-header__deco" aria-hidden="true">⭐</span>
         </div>
@@ -1100,6 +1154,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=101"></script>
+  <script src="script.js?v=102"></script>
 </body>
 </html>
