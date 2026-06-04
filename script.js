@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "90";
+  const APP_BUILD_VERSION = "91";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -6416,6 +6416,7 @@
     }
     if (footerName) {
       footerName.textContent = slot.name;
+      bindSlotFooterName(el, slot);
     }
     if (footerScore) {
       footerScore.textContent = String(slot.score).padStart(1, "0");
@@ -6457,7 +6458,7 @@
         '<div class="slot__lives" aria-label="生命值"></div>' +
         '<div class="slot__footer">' +
         '  <span class="slot__footer-part slot__footer-part--emoji" aria-label="狀態表情"></span>' +
-        '  <div class="slot__footer-part slot__footer-part--name"></div>' +
+        '  <button type="button" class="slot__footer-part slot__footer-part--name"></button>' +
         '  <button type="button" class="slot__footer-part slot__footer-part--score" aria-label="得分"></button>' +
         "</div>" +
         '<div class="score-quick-menu"></div>';
@@ -6490,6 +6491,7 @@
 
     if (footerName) {
       footerName.textContent = slot.name;
+      bindSlotFooterName(el, slot);
     }
 
     if (footerScore) {
@@ -6664,7 +6666,60 @@
     syncAllQuickScoreMenus();
     slots.forEach(function (slot) {
       const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
-      if (el) updateSlotNavInteractable(el, slot);
+      if (el) {
+        updateSlotNavInteractable(el, slot);
+        bindSlotFooterName(el, slot);
+      }
+    });
+  }
+
+  function ensureFooterNameButton(el) {
+    let footerName = el.querySelector(".slot__footer-part--name");
+    if (!footerName) return null;
+    if (footerName.tagName !== "BUTTON") {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = footerName.className;
+      btn.textContent = footerName.textContent;
+      footerName.replaceWith(btn);
+      footerName = btn;
+    }
+    return footerName;
+  }
+
+  function bindSlotFooterName(el, slot) {
+    const footerName = ensureFooterNameButton(el);
+    if (!footerName) return;
+    footerName.textContent = slot.name;
+    if (teacherMode) {
+      footerName.disabled = false;
+      footerName.title = "點擊修改姓名";
+      footerName.setAttribute("aria-label", "修改學生姓名：" + slot.name);
+      footerName.onclick = function (ev) {
+        ev.stopPropagation();
+        promptEditSlotName(slot.id);
+      };
+    } else {
+      footerName.disabled = true;
+      footerName.title = "";
+      footerName.removeAttribute("aria-label");
+      footerName.onclick = null;
+    }
+  }
+
+  function promptEditSlotName(slotId) {
+    if (!ensureTeacherModeOn()) return;
+    const slot = getSlotById(slotId);
+    if (!slot) return;
+    const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
+    showAppPrompt("請輸入新的學生姓名：", defaultName, {
+      title: "修改學生姓名",
+    }).then(function (nameInput) {
+      if (nameInput === null) return;
+      slot.name = nameInput.trim() || DEFAULT_NAME;
+      saveSlots();
+      renderSlotElement(slot);
+      showAppToast("已更新為：「" + slot.name + "」", { variant: "success" });
     });
   }
 
@@ -6788,16 +6843,7 @@
       if (choice === null) return;
 
       if (choice.trim() === "1") {
-        const defaultName = slot.name === DEFAULT_NAME ? "" : slot.name;
-        showAppPrompt("請輸入新的學生姓名：", defaultName, {
-          title: "修改學生姓名",
-        }).then(function (nameInput) {
-          if (nameInput === null) return;
-          slot.name = nameInput.trim() || DEFAULT_NAME;
-          saveSlots();
-          renderSlotElement(slot);
-          showAppToast("已更新為：「" + slot.name + "」", { variant: "success" });
-        });
+        promptEditSlotName(slotId);
         return;
       }
 
