@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "96";
+  const APP_BUILD_VERSION = "97";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -1660,9 +1660,7 @@
     const missionToggle = document.getElementById("btn-mission-reminder-toggle");
     const missionBody = document.getElementById("mission-reminder-body");
     if (missionToggle && missionBody) {
-      missionToggle.addEventListener("click", function () {
-        setMissionReminderExpanded(missionBody.hidden);
-      });
+      missionToggle.addEventListener("click", onMissionReminderToggleClick);
       setMissionReminderExpanded(false);
     }
   }
@@ -4876,9 +4874,25 @@
   function showLuckyResultModal(winnerIds) {
     const modal = document.getElementById("lucky-result-modal");
     const bodyEl = document.getElementById("lucky-modal-body");
+    const cardEl = modal ? modal.querySelector(".lucky-modal__card") : null;
     if (!modal || !bodyEl) return;
 
+    const count = winnerIds.length;
+    const fewWinners = count > 0 && count <= 6;
+
     bodyEl.innerHTML = "";
+    bodyEl.className = "lucky-modal__body";
+    if (fewWinners) {
+      bodyEl.classList.add("lucky-modal__body--few");
+      bodyEl.classList.add("lucky-modal__body--count-" + count);
+    } else {
+      bodyEl.classList.add("lucky-modal__body--many");
+    }
+
+    if (cardEl) {
+      cardEl.classList.toggle("lucky-modal__card--many-winners", count >= 7);
+    }
+
     winnerIds.forEach(function (id) {
       const slot = getSlotById(id);
       if (!slot) return;
@@ -4892,7 +4906,12 @@
   function closeLuckyResultModal() {
     const modal = document.getElementById("lucky-result-modal");
     const bodyEl = document.getElementById("lucky-modal-body");
-    if (bodyEl) bodyEl.innerHTML = "";
+    const cardEl = modal ? modal.querySelector(".lucky-modal__card") : null;
+    if (bodyEl) {
+      bodyEl.innerHTML = "";
+      bodyEl.className = "lucky-modal__body";
+    }
+    if (cardEl) cardEl.classList.remove("lucky-modal__card--many-winners");
     luckyDrawWinnerIds = [];
     if (modal) modal.hidden = true;
     document.body.classList.remove("lucky-modal-open");
@@ -5465,9 +5484,37 @@
     saveMissionState();
   }
 
+  function dismissMissionReminderPanel() {
+    missionReminderVisible = false;
+    setMissionReminderExpanded(false);
+    syncMissionHudLayout();
+    saveMissionState();
+  }
+
   function closeMissionReminderManual() {
-    stopScoreKingMissionSilently();
-    hideMissionReminder();
+    dismissMissionReminderPanel();
+  }
+
+  function onMissionReminderToggleClick() {
+    const body = document.getElementById("mission-reminder-body");
+    const hud = document.getElementById("mission-score-hud");
+    const scoreHudWasHidden =
+      scoreKingMission.active && hud && hud.hidden;
+
+    if (scoreHudWasHidden) {
+      showMissionScoreHud();
+    }
+
+    if (!missionReminderVisible && currentDailyMission) {
+      missionReminderVisible = true;
+      syncMissionHudLayout();
+      setMissionReminderExpanded(true);
+      return;
+    }
+
+    if (scoreHudWasHidden) return;
+
+    if (body) setMissionReminderExpanded(body.hidden);
   }
 
   function beginClassWithMission(mission) {
@@ -5517,6 +5564,8 @@
     if (hud) hud.hidden = false;
     updateMissionScoreHud();
     syncMissionHudLayout();
+    const stack = document.getElementById("dash-mission-stack");
+    if (stack && scoreKingMission.active) stack.hidden = false;
   }
 
   function hideMissionScoreHud() {

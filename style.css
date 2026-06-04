@@ -1265,6 +1265,90 @@ body.lucky-draw-running .slot {
   padding-right: 0.25rem;
 }
 
+.lucky-modal__body--few {
+  overflow-y: visible;
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.lucky-modal__body--few.lucky-modal__body--count-1 {
+  grid-template-columns: minmax(0, 280px);
+  justify-content: center;
+}
+
+.lucky-modal__body--few.lucky-modal__body--count-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lucky-modal__body--few.lucky-modal__body--count-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lucky-modal__body--many {
+  max-height: min(52vh, 520px);
+  overflow-y: auto;
+}
+
+.lucky-modal__card--many-winners {
+  overflow-y: auto;
+}
+
+.lucky-modal__body--few .lucky-winner-row {
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(5.5rem, 1fr);
+  min-height: 0;
+}
+
+.lucky-modal__body--few .lucky-winner-row__name {
+  padding: 0.45rem 0.4rem;
+  gap: 0.3rem;
+}
+
+.lucky-modal__body--few .lucky-winner-row__slot-num {
+  font-size: 0.82rem;
+  padding: 0.22rem 0.55rem;
+}
+
+.lucky-modal__body--few .lucky-winner-row__student {
+  font-size: clamp(1rem, 2.2vw, 1.28rem);
+  letter-spacing: 0.04em;
+  -webkit-text-fill-color: #4a2518;
+  color: #4a2518;
+  background: none;
+  filter: none;
+}
+
+.lucky-modal__body--few .lucky-winner-row__beast {
+  min-height: 5.5rem;
+  padding: 0.35rem;
+}
+
+.lucky-modal__body--few .lucky-winner-row__viewer {
+  min-height: 4.5rem;
+  max-height: 6.5rem;
+  height: 5.5rem;
+}
+
+.lucky-modal__body--few .lucky-winner-row__egg {
+  width: min(56px, 42%);
+  height: min(72px, 70%);
+}
+
+.lucky-modal__body--many .lucky-winner-row {
+  min-height: min(24vh, 200px);
+}
+
+.lucky-modal__body--many .lucky-winner-row__beast {
+  min-height: 160px;
+}
+
+.lucky-modal__body--many .lucky-winner-row__viewer {
+  min-height: 140px;
+  max-height: 200px;
+}
+
 .lucky-winner-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -4139,8 +4223,11 @@ body.bulk-pick-active .slot {
   aspect-ratio: 1;
   margin-left: -19%;
   border-radius: 50%;
-  border: 2px solid hsla(var(--ripple-hue, 180), 88%, 68%, 0.72);
-  box-shadow: 0 0 10px hsla(var(--ripple-hue, 180), 95%, 62%, 0.45);
+  border: 3px solid hsla(var(--ripple-hue, 180), 96%, 78%, 0.95);
+  box-shadow:
+    0 0 4px hsla(var(--ripple-hue, 180), 100%, 88%, 0.95),
+    0 0 14px hsla(var(--ripple-hue, 180), 98%, 68%, 0.75),
+    inset 0 0 12px hsla(var(--ripple-hue, 180), 100%, 92%, 0.35);
   animation: slotRippleExpand 2.8s ease-out infinite;
   opacity: 0;
 }
@@ -4160,13 +4247,13 @@ body.bulk-pick-active .slot {
 @keyframes slotRippleExpand {
   0% {
     transform: scale(0.35);
-    opacity: 0.85;
+    opacity: 0.95;
   }
-  70% {
-    opacity: 0.35;
+  55% {
+    opacity: 0.72;
   }
   100% {
-    transform: scale(2.4);
+    transform: scale(2.2);
     opacity: 0;
   }
 }
