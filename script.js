@@ -1,25 +1,10 @@
-/* Firebase v8 compat — 設定見 firebase-config.js */
-(function initFirebaseGlobal() {
-  var cfg = typeof window !== "undefined" ? window.FIREBASE_CONFIG : null;
-  if (typeof firebase === "undefined") {
-    window.__firebaseInitError = "Firebase SDK 尚未載入，請確認 index.html 已引入 firebase-app.js。";
-    return;
-  }
-  if (!cfg || !cfg.apiKey || !cfg.databaseURL) {
-    window.__firebaseInitError =
-      "Firebase 設定不完整，請在 firebase-config.js 填入 apiKey 與 databaseURL。";
-    return;
-  }
-  if (!firebase.apps.length) {
-    firebase.initializeApp(cfg);
-  }
-  window.__firebaseDb = firebase.database();
-})();
-
+/* Firebase v8 compat — 設定見 firebase-config.js，初始化見 firebase-init.js */
 (function () {
   "use strict";
 
   const db = window.__firebaseDb || null;
+
+  const APP_BUILD_VERSION = "89";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -149,6 +134,7 @@
     return protocol === "http:" || protocol === "https:";
   }
 
+  let slots = [];
   let gardenDisplayName = DEFAULT_GARDEN_NAME;
 
   function getSlotCount() {
@@ -542,8 +528,49 @@
   let classCodeModalCallback = null;
   let connectGeneration = 0;
 
+  function updateBuildVersionBadge() {
+    const badge = document.querySelector(".build-version-badge");
+    if (badge) badge.textContent = "v" + APP_BUILD_VERSION;
+  }
+
   function getDb() {
     return db || window.__firebaseDb || null;
+  }
+
+  function ensureFirebaseReady() {
+    if (window.__firebaseInitError) {
+      return Promise.reject(new Error(window.__firebaseInitError));
+    }
+    if (window.__firebaseReady) {
+      return window.__firebaseReady;
+    }
+    var existing = getDb();
+    if (existing) return Promise.resolve(existing);
+    return Promise.reject(new Error("Firebase 尚未初始化。"));
+  }
+
+  function formatFirebaseConnectionError(err) {
+    const code = err && err.code;
+    const msg = err && err.message ? String(err.message) : "";
+    if (
+      code === "PERMISSION_DENIED" ||
+      msg.indexOf("permission_denied") >= 0 ||
+      msg.indexOf("Permission denied") >= 0
+    ) {
+      return (
+        "雲端拒絕存取（Permission denied）。\n" +
+        "請至 Firebase 主控台：\n" +
+        "1. Authentication → 登入方法 → 啟用「匿名」\n" +
+        "2. Realtime Database → 規則 → 設為 auth != null 或暫時設 read/write: true"
+      );
+    }
+    if (code === "NETWORK_ERROR" || msg.indexOf("network") >= 0) {
+      return "無法連接雲端，請檢查網路連線。";
+    }
+    if (window.__firebaseInitError) {
+      return window.__firebaseInitError;
+    }
+    return "無法連接雲端，請確認 firebase-config.js 的 databaseURL 與網路。";
   }
 
   function sanitizeClassCode(raw) {
@@ -1072,6 +1099,20 @@
 
   function connectToClassCode(rawCode, callback, options) {
     options = options || {};
+    ensureFirebaseReady()
+      .then(function () {
+        connectToClassCodeAfterReady(rawCode, callback, options);
+      })
+      .catch(function (err) {
+        console.warn("[Firebase] 初始化失敗", err);
+        showClassCodeError(formatFirebaseConnectionError(err));
+        setCloudSyncStatus("雲端連線失敗", true);
+        if (callback) callback(false);
+      });
+  }
+
+  function connectToClassCodeAfterReady(rawCode, callback, options) {
+    options = options || {};
     const db = getDb();
     if (!db) {
       showAppToast(window.__firebaseInitError || "Firebase 尚未初始化。", {
@@ -1157,7 +1198,7 @@
         if (err && err.stale) return;
         cloudSyncSuspended = false;
         console.warn("[Firebase] 連線失敗", err);
-        showClassCodeError("無法連接雲端，請確認 firebase-config.js 的 databaseURL 與網路。");
+        showClassCodeError(formatFirebaseConnectionError(err));
         setCloudSyncStatus("雲端連線失敗", true);
         if (callback) callback(false);
       });
@@ -6819,6 +6860,7 @@
   }
 
   function continueBoot() {
+    updateBuildVersionBadge();
     showFileProtocolBanner();
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);

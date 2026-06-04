@@ -33,24 +33,30 @@
 
   function loadDashSlotFromCloud(done) {
     const code = readClassCode();
-    const db = window.__firebaseDb;
-    if (!code || !db) {
-      alert("請先在主頁輸入班級代碼並連接 Firebase 雲端。");
-      window.location.href = "index.html";
-      return;
-    }
-    db.ref(code + "/students")
-      .once("value")
-      .then(function (snap) {
-        const data = snap.val();
-        const slots = data && Array.isArray(data.slots) ? data.slots : [];
-        const slot = slots.find(function (s) {
-          return s.id === slotId;
-        });
-        done(slot || null);
+    const ready = window.__firebaseReady || Promise.resolve(window.__firebaseDb);
+    ready
+      .then(function () {
+        const db = window.__firebaseDb;
+        if (!code || !db) {
+          alert("請先在主頁輸入班級代碼並連接 Firebase 雲端。");
+          window.location.href = "index.html";
+          return;
+        }
+        return db.ref(code + "/students")
+          .once("value")
+          .then(function (snap) {
+            const data = snap.val();
+            const slots = data && Array.isArray(data.slots) ? data.slots : [];
+            const slot = slots.find(function (s) {
+              return s.id === slotId;
+            });
+            done(slot || null);
+          });
       })
       .catch(function () {
-        alert("無法讀取雲端資料，請確認網路與 firebase-config.js 設定。");
+        alert(
+          "無法讀取雲端資料。請確認：\n1. 網路正常\n2. Firebase 已啟用「匿名登入」\n3. Realtime Database 規則允許讀寫"
+        );
         window.location.href = "index.html";
       });
   }
