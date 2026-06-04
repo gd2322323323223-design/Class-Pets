@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "89";
+  const APP_BUILD_VERSION = "90";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -593,6 +593,30 @@
     }
   }
 
+  function normalizeCloudSlots(raw) {
+    if (Array.isArray(raw)) return raw;
+    if (!raw || typeof raw !== "object") return null;
+    return Object.keys(raw)
+      .filter(function (k) {
+        return /^\d+$/.test(k);
+      })
+      .sort(function (a, b) {
+        return parseInt(a, 10) - parseInt(b, 10);
+      })
+      .map(function (k) {
+        return raw[k];
+      });
+  }
+
+  function coerceCloudNumber(v, fallback) {
+    if (typeof v === "number" && Number.isFinite(v)) return v;
+    if (typeof v === "string" && v.trim() !== "") {
+      const n = parseFloat(v);
+      if (Number.isFinite(n)) return n;
+    }
+    return fallback;
+  }
+
   function serializeSlotsForCloud() {
     const source = slots.length ? slots : createDefaultSlots();
     return source.map(function (s) {
@@ -610,15 +634,15 @@
   }
 
   function parseSlotsFromCloud(rawSlots) {
-    if (!Array.isArray(rawSlots) || !isValidSlotCount(rawSlots.length)) {
+    const list = normalizeCloudSlots(rawSlots);
+    if (!list || !isValidSlotCount(list.length)) {
       return createDefaultSlots();
     }
-    return rawSlots
+    return list
       .map(function (s, i) {
       const id = i + 1;
       const savedAnimal = s.animal;
-      const savedScore =
-        typeof s.score === "number" ? clampScore(s.score) : 0;
+      const savedScore = coerceCloudNumber(s.score, 0);
       return {
         id: id,
         name: s.name || DEFAULT_NAME,
@@ -628,9 +652,8 @@
             ? savedAnimal
             : animalForSlot(id),
         emoji: DEFAULT_EMOJI,
-        score: savedScore,
-        lives:
-          typeof s.lives === "number" ? clampLives(s.lives) : LIVES_DEFAULT,
+        score: clampScore(savedScore),
+        lives: coerceCloudNumber(s.lives, LIVES_DEFAULT),
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, id),
         history: normalizeScoreHistory(s.history),
       };
@@ -909,15 +932,20 @@
     options = options || {};
     if (!data) data = buildDefaultCloudData();
 
-    if (data.students && Array.isArray(data.students.slots)) {
-      slots = parseSlotsFromCloud(data.students.slots);
-      slots.forEach(function (s) {
-        if (s.id === 15) s.animal = "tiger";
-        if (typeof s.score !== "number") s.score = 0;
-        if (typeof s.lives !== "number") s.lives = LIVES_DEFAULT;
-        s.beamHueBase = normalizeBeamHueBase(s.beamHueBase, s.id);
-        s.emoji = DEFAULT_EMOJI;
-      });
+    if (data.students) {
+      const cloudSlots = normalizeCloudSlots(data.students.slots);
+      if (cloudSlots && cloudSlots.length) {
+        slots = parseSlotsFromCloud(cloudSlots);
+        slots.forEach(function (s) {
+          if (s.id === 15) s.animal = "tiger";
+          s.score = clampScore(coerceCloudNumber(s.score, 0));
+          s.lives = clampLives(coerceCloudNumber(s.lives, LIVES_DEFAULT));
+          s.beamHueBase = normalizeBeamHueBase(s.beamHueBase, s.id);
+          s.emoji = DEFAULT_EMOJI;
+        });
+      } else if (options.initial) {
+        slots = createDefaultSlots();
+      }
     } else if (options.initial) {
       slots = createDefaultSlots();
     }
@@ -968,6 +996,7 @@
 
   function scheduleCloudSync() {
     if (!getDb() || !currentClassCode || cloudSyncSuspended) return;
+    if (!slots.length) return;
     if (cloudSyncTimerId !== null) {
       clearTimeout(cloudSyncTimerId);
     }
@@ -1164,7 +1193,10 @@
           return Promise.reject({ stale: true });
         }
         let data = snap.val();
-        if (!data || !data.students || !data.students.slots) {
+        const cloudSlots = normalizeCloudSlots(
+          data && data.students && data.students.slots
+        );
+        if (!data || !cloudSlots || !cloudSlots.length) {
           if (isClassSwitch) {
             data = buildFreshCloudData();
           } else {
