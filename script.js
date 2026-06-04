@@ -24,8 +24,10 @@
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
   const TIMER_MINUTE_CUE_STORAGE_KEY = "classroom-dashboard-timer-minute-cue-v1";
-  const MAX_GROUPS = 10;
-  const SLOT_COUNT = 22;
+  const DEFAULT_SLOT_COUNT = 22;
+  const MIN_SLOT_COUNT = 1;
+  const MAX_SLOT_COUNT = 40;
+  const DEFAULT_GARDEN_NAME = "欣賞園地";
   const DEFAULT_NAME = "待命名";
   const DEFAULT_EMOJI = "😄";
   const EMOJI_SCORE_UP = "😍";
@@ -147,7 +149,15 @@
     return protocol === "http:" || protocol === "https:";
   }
 
-  let slots = [];
+  let gardenDisplayName = DEFAULT_GARDEN_NAME;
+
+  function getSlotCount() {
+    return slots.length;
+  }
+
+  function isValidSlotCount(n) {
+    return Number.isInteger(n) && n >= MIN_SLOT_COUNT && n <= MAX_SLOT_COUNT;
+  }
   let teacherMode = false;
   let animCycleTimeoutId = null;
   let activeScoreMenuSlotId = null;
@@ -573,10 +583,11 @@
   }
 
   function parseSlotsFromCloud(rawSlots) {
-    if (!Array.isArray(rawSlots) || rawSlots.length !== SLOT_COUNT) {
+    if (!Array.isArray(rawSlots) || !isValidSlotCount(rawSlots.length)) {
       return createDefaultSlots();
     }
-    return rawSlots.map(function (s, i) {
+    return rawSlots
+      .map(function (s, i) {
       const id = i + 1;
       const savedAnimal = s.animal;
       const savedScore =
@@ -604,10 +615,10 @@
 
   function parseGroupsFromCloud(raw) {
     if (!Array.isArray(raw)) return [];
-    return raw.slice(0, MAX_GROUPS).map(function (g, idx) {
+    return raw.map(function (g, idx) {
       const memberIds = Array.isArray(g.memberIds)
         ? g.memberIds.filter(function (id) {
-            return Number.isInteger(id) && id >= 1 && id <= SLOT_COUNT;
+            return Number.isInteger(id) && id >= 1 && id <= getSlotCount();
           })
         : [];
       return {
@@ -725,6 +736,9 @@
         dailyMissionDrawCommitted: false,
         scoreKingMission: { active: false, sessionScore: 0 },
       },
+      classDisplay: {
+        gardenName: DEFAULT_GARDEN_NAME,
+      },
       updatedAt: Date.now(),
     };
   }
@@ -761,6 +775,9 @@
         dailyMissionDrawCommitted: false,
         scoreKingMission: { active: false, sessionScore: 0 },
       },
+      classDisplay: {
+        gardenName: DEFAULT_GARDEN_NAME,
+      },
       updatedAt: Date.now(),
     };
   }
@@ -788,7 +805,7 @@
       const slotsRaw = localStorage.getItem(STORAGE_KEY);
       if (slotsRaw) {
         const parsed = JSON.parse(slotsRaw);
-        if (parsed && Array.isArray(parsed.slots) && parsed.slots.length === SLOT_COUNT) {
+        if (parsed && Array.isArray(parsed.slots) && isValidSlotCount(parsed.slots.length)) {
           payload.students = {
             slots: parsed.slots.map(function (s, i) {
               return {
@@ -854,6 +871,9 @@
       },
       timerMinuteCue: timerMinuteCueEnabled ? "1" : "0",
       mission: buildMissionForCloud(),
+      classDisplay: {
+        gardenName: gardenDisplayName,
+      },
       updatedAt: Date.now(),
     };
   }
@@ -891,6 +911,20 @@
     if (data.timerMinuteCue === "0") timerMinuteCueEnabled = false;
     else if (data.timerMinuteCue === "1") timerMinuteCueEnabled = true;
     applyMissionFromCloud(data.mission);
+
+    if (
+      data.classDisplay &&
+      typeof data.classDisplay.gardenName === "string" &&
+      data.classDisplay.gardenName.trim()
+    ) {
+      gardenDisplayName = data.classDisplay.gardenName.trim();
+    } else {
+      gardenDisplayName = DEFAULT_GARDEN_NAME;
+    }
+    updateDashHeaderTitle();
+    syncGardenNameInput();
+    syncStudentCountUI();
+    updateLuckyCountLimits();
 
     classProgressBootstrapped = false;
 
@@ -1509,6 +1543,7 @@
       ["btn-lucky-panel-toggle", "lucky-panel-body", ".tools-panel--lucky"],
       ["btn-timer-panel-toggle", "timer-panel-body", ".tools-panel--timer"],
       ["btn-backup-panel-toggle", "backup-panel-body", ".tools-panel--backup"],
+      ["btn-class-setup-panel-toggle", "class-setup-panel-body", ".tools-panel--class-setup"],
       ["btn-class-code-panel-toggle", "class-code-panel-body", ".tools-panel--class-code"],
     ];
     panels.forEach(function (entry) {
@@ -1590,10 +1625,159 @@
     const prefix = currentClassCode
       ? sanitizeClassCode(currentClassCode).toUpperCase()
       : "";
-    const text = prefix ? prefix + "欣賞園地" : "欣賞園地";
+    const suffix = gardenDisplayName || DEFAULT_GARDEN_NAME;
+    const text = prefix ? prefix + suffix : suffix;
     if (outline) outline.textContent = text;
     if (gradient) gradient.textContent = text;
     document.title = text;
+  }
+
+  function syncGardenNameInput() {
+    const input = document.getElementById("garden-name-input");
+    if (input) input.value = gardenDisplayName || DEFAULT_GARDEN_NAME;
+  }
+
+  function saveGardenDisplayName(rawName) {
+    const trimmed = (rawName || "").trim();
+    gardenDisplayName = trimmed || DEFAULT_GARDEN_NAME;
+    updateDashHeaderTitle();
+    syncGardenNameInput();
+    scheduleCloudSync();
+  }
+
+  function syncStudentCountUI() {
+    const label = document.getElementById("student-count-label");
+    if (label) {
+      label.textContent = "目前學生：" + getSlotCount() + " 人";
+    }
+    const removeBtn = document.getElementById("btn-student-remove");
+    if (removeBtn) removeBtn.disabled = getSlotCount() <= MIN_SLOT_COUNT;
+    const addBtn = document.getElementById("btn-student-add");
+    if (addBtn) addBtn.disabled = getSlotCount() >= MAX_SLOT_COUNT;
+  }
+
+  function updateLuckyCountLimits() {
+    const input = document.getElementById("lucky-count");
+    const label = document.querySelector('label[for="lucky-count"] > span');
+    const max = getSlotCount();
+    if (input) {
+      input.max = String(max);
+      const val = parseInt(input.value, 10);
+      if (!Number.isFinite(val) || val < 1) input.value = "1";
+      else if (val > max) input.value = String(max);
+    }
+    if (label) label.textContent = "挑選人數（1～" + max + "）";
+  }
+
+  function createSlotData(id) {
+    return {
+      id: id,
+      name: DEFAULT_NAME,
+      hatched: false,
+      animal: animalForSlot(id),
+      emoji: DEFAULT_EMOJI,
+      score: 0,
+      lives: LIVES_DEFAULT,
+      beamHueBase: beamHueBaseForSlot(id),
+      history: {},
+    };
+  }
+
+  function addStudentSlot() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+    if (getSlotCount() >= MAX_SLOT_COUNT) {
+      showAppToast("最多只能有 " + MAX_SLOT_COUNT + " 位學生。", { variant: "warn" });
+      return;
+    }
+    const slot = createSlotData(getSlotCount() + 1);
+    slots.push(slot);
+    saveSlots();
+    renderSlotElement(slot);
+    syncStudentCountUI();
+    updateLuckyCountLimits();
+    showAppToast("已新增 " + slot.id + " 號學生方框。", { variant: "success" });
+  }
+
+  function removeLastStudentSlot() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+    if (getSlotCount() <= MIN_SLOT_COUNT) {
+      showAppToast("至少需要保留 " + MIN_SLOT_COUNT + " 位學生。", { variant: "warn" });
+      return;
+    }
+    const slot = slots[slots.length - 1];
+    const removedId = slot.id;
+    showAppConfirm(
+      "確定移除 " +
+        removedId +
+        " 號「" +
+        slotDisplayName(slot) +
+        "」？\n其分數、組別歸屬將一併清除，且無法復原。",
+      { title: "刪減學生方框", confirmText: "移除", danger: true }
+    ).then(function (ok) {
+      if (!ok) return;
+      const el = document.querySelector('.slot[data-slot-id="' + removedId + '"]');
+      if (el) el.remove();
+      slots.pop();
+      groups.forEach(function (g) {
+        g.memberIds = g.memberIds.filter(function (id) {
+          return id <= getSlotCount();
+        });
+      });
+      bulkSelectedIds = bulkSelectedIds.filter(function (id) {
+        return id <= getSlotCount();
+      });
+      if (activeScoreMenuSlotId === removedId) activeScoreMenuSlotId = null;
+      saveGroups();
+      saveSlots();
+      renderGroupButtons();
+      syncStudentCountUI();
+      updateLuckyCountLimits();
+      showAppToast("已移除 " + removedId + " 號學生方框。", { variant: "success" });
+    });
+  }
+
+  function initClassSetupPanel() {
+    const gardenInput = document.getElementById("garden-name-input");
+    const gardenSaveBtn = document.getElementById("btn-garden-name-save");
+    const addBtn = document.getElementById("btn-student-add");
+    const removeBtn = document.getElementById("btn-student-remove");
+    const titleEl = document.querySelector(".dash-header__title");
+
+    syncGardenNameInput();
+    syncStudentCountUI();
+
+    if (gardenSaveBtn) {
+      gardenSaveBtn.addEventListener("click", function () {
+        if (!teacherMode && !ensureTeacherModeOn()) return;
+        saveGardenDisplayName(gardenInput ? gardenInput.value : "");
+        showAppToast("園地名稱已更新。", { variant: "success" });
+      });
+    }
+    if (gardenInput) {
+      gardenInput.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          if (!teacherMode && !ensureTeacherModeOn()) return;
+          saveGardenDisplayName(gardenInput.value);
+          showAppToast("園地名稱已更新。", { variant: "success" });
+        }
+      });
+    }
+    if (addBtn) addBtn.addEventListener("click", addStudentSlot);
+    if (removeBtn) removeBtn.addEventListener("click", removeLastStudentSlot);
+    if (titleEl) {
+      titleEl.addEventListener("dblclick", function () {
+        if (!teacherMode && !ensureTeacherModeOn()) return;
+        showAppPrompt("請輸入標題後半段名稱（班級代碼會自動加在前面）：", gardenDisplayName, {
+          title: "編輯園地名稱",
+          placeholder: DEFAULT_GARDEN_NAME,
+        }).then(function (val) {
+          if (val === null) return;
+          saveGardenDisplayName(val);
+          showAppToast("園地名稱已更新。", { variant: "success" });
+        });
+      });
+    }
   }
 
   function beamAngleForIndex(beamIndex) {
@@ -1766,7 +1950,7 @@
   }
 
   function eggHueForSlot(id) {
-    return Math.round(((id - 1) / SLOT_COUNT) * 360);
+    return Math.round(((id - 1) / Math.max(getSlotCount(), 1)) * 360);
   }
 
   function slotGradientByPosition(id) {
@@ -2070,20 +2254,14 @@
     });
   }
 
-  function createDefaultSlots() {
-    return Array.from({ length: SLOT_COUNT }, function (_, i) {
+  function createDefaultSlots(count) {
+    const n =
+      count != null
+        ? Math.max(MIN_SLOT_COUNT, Math.min(MAX_SLOT_COUNT, count))
+        : DEFAULT_SLOT_COUNT;
+    return Array.from({ length: n }, function (_, i) {
       const id = i + 1;
-      return {
-        id: id,
-        name: DEFAULT_NAME,
-        hatched: false,
-        animal: animalForSlot(id),
-        emoji: DEFAULT_EMOJI,
-        score: 0,
-        lives: LIVES_DEFAULT,
-        beamHueBase: beamHueBaseForSlot(id),
-        history: {},
-      };
+      return createSlotData(id);
     });
   }
 
@@ -3527,7 +3705,7 @@
         return parseInt(id, 10);
       })
       .filter(function (id) {
-        if (Number.isNaN(id) || id < 1 || id > SLOT_COUNT || seen[id]) {
+        if (Number.isNaN(id) || id < 1 || id > getSlotCount() || seen[id]) {
           return false;
         }
         seen[id] = true;
@@ -3688,7 +3866,8 @@
   }
 
   function ensureGroupPanel() {
-    if (!gridEl || groupPanelInitialized) return;
+    const host = document.getElementById("group-score-panel-host");
+    if (!host || groupPanelInitialized) return;
 
     const panel = document.createElement("section");
     panel.id = "group-score-panel";
@@ -3737,7 +3916,7 @@
       "</div>" +
       '<div id="group-buttons" class="group-score-panel__buttons"></div>';
 
-    gridEl.appendChild(panel);
+    host.appendChild(panel);
 
     panel.querySelectorAll(".bulk-score-quick-btn").forEach(function (btn) {
       btn.addEventListener("click", function (ev) {
@@ -4186,14 +4365,10 @@
     });
 
     const btnAdd = document.getElementById("btn-group-add");
-    if (btnAdd) btnAdd.disabled = groups.length >= MAX_GROUPS;
+    if (btnAdd) btnAdd.disabled = false;
   }
 
   function onAddGroup() {
-    if (groups.length >= MAX_GROUPS) {
-      showAppToast("最多只能建立 " + MAX_GROUPS + " 個組別。", { variant: "warn" });
-      return;
-    }
     openGroupBuilderModal();
   }
 
@@ -4244,11 +4419,6 @@
   }
 
   function confirmAddGroupFromBuilder() {
-    if (groups.length >= MAX_GROUPS) {
-      showAppToast("最多只能建立 " + MAX_GROUPS + " 個組別。", { variant: "warn" });
-      closeGroupBuilderModal();
-      return;
-    }
     const nameInput = document.getElementById("group-builder-name");
     const fallbackName = "組別 " + (groups.length + 1);
     const name = nameInput ? (nameInput.value || "").trim() || fallbackName : fallbackName;
@@ -4445,12 +4615,12 @@
   }
 
   function pickRandomSlotId() {
-    return Math.floor(Math.random() * SLOT_COUNT) + 1;
+    return Math.floor(Math.random() * getSlotCount()) + 1;
   }
 
   function pickUniqueWinnerIds(count) {
     const pool = [];
-    for (let i = 1; i <= SLOT_COUNT; i++) pool.push(i);
+    for (let i = 1; i <= getSlotCount(); i++) pool.push(i);
     for (let i = pool.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       const tmp = pool[i];
@@ -4598,7 +4768,7 @@
     const input = document.getElementById("lucky-count");
     let count = input ? parseInt(input.value, 10) : 1;
     if (Number.isNaN(count)) count = 1;
-    count = Math.max(1, Math.min(SLOT_COUNT, count));
+    count = Math.max(1, Math.min(getSlotCount(), count));
 
     if (input) input.value = String(count);
 
@@ -5577,6 +5747,7 @@
         dailyScore: JSON.stringify(payload.dailyScore),
         timerMinuteCue: payload.timerMinuteCue,
         mission: JSON.stringify(payload.mission),
+        classDisplay: JSON.stringify(payload.classDisplay),
       },
     };
   }
@@ -5631,8 +5802,8 @@
       throw new Error("存檔碼缺少學生資料。");
     }
     const slotsParsed = JSON.parse(data.slots);
-    if (!slotsParsed.slots || slotsParsed.slots.length !== SLOT_COUNT) {
-      throw new Error("學生資料筆數不符（需 22 位）。");
+    if (!slotsParsed.slots || !isValidSlotCount(slotsParsed.slots.length)) {
+      throw new Error("學生資料筆數無效（需 " + MIN_SLOT_COUNT + "～" + MAX_SLOT_COUNT + " 位）。");
     }
 
     cloudSyncSuspended = true;
@@ -5660,6 +5831,21 @@
     if (data.mission) {
       applyMissionFromCloud(JSON.parse(data.mission));
     }
+    if (data.classDisplay) {
+      try {
+        const cd =
+          typeof data.classDisplay === "string"
+            ? JSON.parse(data.classDisplay)
+            : data.classDisplay;
+        if (cd && typeof cd.gardenName === "string" && cd.gardenName.trim()) {
+          gardenDisplayName = cd.gardenName.trim();
+        }
+      } catch (e) {}
+    }
+    updateDashHeaderTitle();
+    syncGardenNameInput();
+    syncStudentCountUI();
+    updateLuckyCountLimits();
     slots.forEach(function (s) {
       if (s.id === 15) s.animal = "tiger";
       if (typeof s.score !== "number") s.score = 0;
@@ -5836,6 +6022,7 @@
     setTimerMode("stopwatch");
     initDailyMissionModule();
     initDataBackupModule();
+    initClassSetupPanel();
   }
 
   function toggleSlotLifeHeart(slotId, heartIndex) {
@@ -6391,6 +6578,15 @@
     refreshScoreUndoButton();
     const resetBtn = document.getElementById("btn-class-code-reset");
     if (resetBtn) resetBtn.hidden = !teacherMode;
+    const studentAddBtn = document.getElementById("btn-student-add");
+    const studentRemoveBtn = document.getElementById("btn-student-remove");
+    const gardenInput = document.getElementById("garden-name-input");
+    const gardenSaveBtn = document.getElementById("btn-garden-name-save");
+    if (studentAddBtn) studentAddBtn.hidden = !teacherMode;
+    if (studentRemoveBtn) studentRemoveBtn.hidden = !teacherMode;
+    if (gardenInput) gardenInput.readOnly = !teacherMode;
+    if (gardenSaveBtn) gardenSaveBtn.hidden = !teacherMode;
+    syncStudentCountUI();
     refreshMissionPickButton();
     syncAllQuickScoreMenus();
     slots.forEach(function (slot) {
@@ -6627,6 +6823,8 @@
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);
     syncAllSlotsAutoHatch();
+    syncStudentCountUI();
+    updateLuckyCountLimits();
     loadGroups();
     loadClassProgressMeta();
     loadDailyScoreLog();

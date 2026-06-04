@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=85" />
+  <link rel="stylesheet" href="style.css?v=86" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -306,6 +306,53 @@
           ♻️ 還原全班資料
         </button>
       </div>
+      </div>
+    </section>
+
+    <section class="tools-panel tools-panel--class-setup tools-panel--collapsible" aria-labelledby="tools-class-setup-title">
+      <button
+        type="button"
+        id="btn-class-setup-panel-toggle"
+        class="tools-panel__toggle"
+        aria-expanded="false"
+        aria-controls="class-setup-panel-body"
+      >
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">🏫</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-class-setup-title" class="tools-panel__title">班級設定</span>
+            <span class="tools-panel__subtitle">人數與園地名稱</span>
+          </span>
+        </span>
+        <span class="tools-panel__chevron" aria-hidden="true">▼</span>
+      </button>
+      <div id="class-setup-panel-body" class="tools-panel__collapsible-body" hidden>
+        <label class="tools-field" for="garden-name-input">
+          <span>園地名稱</span>
+          <input
+            id="garden-name-input"
+            class="tools-input"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="欣賞園地"
+            maxlength="32"
+            readonly
+          />
+        </label>
+        <button type="button" id="btn-garden-name-save" class="tools-btn tools-btn--ghost" hidden>
+          套用園地名稱
+        </button>
+        <p id="student-count-label" class="tools-panel__desc">目前學生：22 人</p>
+        <div class="tools-panel__actions">
+          <button type="button" id="btn-student-add" class="tools-btn tools-btn--primary" hidden>
+            ＋ 新增學生方框
+          </button>
+          <button type="button" id="btn-student-remove" class="tools-btn tools-btn--ghost" hidden>
+            － 刪減最後一位
+          </button>
+        </div>
+        <p class="tools-panel__desc">編輯模式下可調整；刪減會移除最後一號學生。</p>
       </div>
     </section>
 
@@ -936,7 +983,7 @@
       <div class="dash-header__row">
         <div class="dash-header__badge">
           <span class="dash-header__deco" aria-hidden="true">⭐</span>
-          <h1 class="dash-header__title">
+          <h1 class="dash-header__title" title="編輯模式下連擊兩下可更改園地名稱">
             <span class="dash-header__title-outline" aria-hidden="true">欣賞園地</span>
             <span class="dash-header__title-gradient">欣賞園地</span>
           </h1>
@@ -983,13 +1030,16 @@
       </div>
     </section>
 
-    <main id="dashboard-grid" class="dashboard-grid" aria-label="全班神獸插槽"></main>
+    <div class="dashboard-layout">
+      <main id="dashboard-grid" class="dashboard-grid" aria-label="全班神獸插槽"></main>
+      <aside id="group-score-panel-host" class="group-score-panel-host" aria-label="組別加分"></aside>
+    </div>
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <script src="firebase-config.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=85"></script>
+  <script src="script.js?v=86"></script>
 </body>
 </html>

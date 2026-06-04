@@ -2,11 +2,11 @@
   "use strict";
 
   const CLASS_CODE_STORAGE_KEY = "classroom-class-code-v1";
-  const SLOT_COUNT = 22;
+  const SLOT_COUNT_MAX = 40;
 
   function getSlotIdFromUrl() {
     const n = parseInt(new URLSearchParams(window.location.search).get("slot"), 10);
-    if (Number.isNaN(n) || n < 1 || n > SLOT_COUNT) return 0;
+    if (Number.isNaN(n) || n < 1 || n > SLOT_COUNT_MAX) return 0;
     return n;
   }
 
