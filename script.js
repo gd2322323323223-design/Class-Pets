@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "95";
+  const APP_BUILD_VERSION = "96";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -198,7 +198,7 @@
     sessionScore: 0,
   };
 
-  const MISSION_SCORE_GOAL = 30;
+  const MISSION_SCORE_GOAL = 50;
   const MISSION_CLASS_BONUS = 3;
   const MISSION_ROLL_MS = 2500;
   const MISSION_DEFAULT_REWARD = "全班可加 3 分！";
@@ -230,7 +230,7 @@
     },
     {
       id: "scoreKing",
-      title: "誰是得分王",
+      title: "齊心協力",
       type: "scoreKing",
       desc: "這節課裏，如果全班取得超過 " + MISSION_SCORE_GOAL + " 分。",
       reward: MISSION_DEFAULT_REWARD,
@@ -1711,6 +1711,7 @@
   }
 
   function saveGardenDisplayName(rawName) {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
     const trimmed = (rawName || "").trim();
     gardenDisplayName = trimmed || DEFAULT_GARDEN_NAME;
     updateDashHeaderTitle();
@@ -3775,8 +3776,13 @@
 
     const minusSection = document.getElementById("bulk-score-minus-section");
     if (minusSection) {
-      minusSection.hidden =
-        !teacherMode || !showBulkScore || bulkPickModalPhase !== "score";
+      const showMinus =
+        showBulkScore && bulkPickModalPhase === "score";
+      minusSection.hidden = !showMinus;
+      minusSection.classList.toggle(
+        "bulk-score-zone--needs-teacher",
+        showMinus && !teacherMode
+      );
     }
 
     document.body.classList.toggle("bulk-pick-active", bulkPickActive);
@@ -3994,6 +4000,7 @@
       cancelBulkPick();
       return;
     }
+    if (defaultDelta < 0 && !teacherMode && !ensureTeacherModeOn()) return;
     applyBulkQuickScore(defaultDelta);
   }
 
@@ -4002,6 +4009,7 @@
       cancelBulkPick();
       return;
     }
+    if (sign < 0 && !teacherMode && !ensureTeacherModeOn()) return;
     const inputId = sign > 0 ? "bulk-score-add-input" : "bulk-score-sub-input";
     const inputEl = document.getElementById(inputId);
     const raw = inputEl ? String(inputEl.value).trim() : "";
@@ -5546,7 +5554,7 @@
       const startBtn = document.createElement("button");
       startBtn.type = "button";
       startBtn.className = "tools-btn tools-btn--mission-start";
-      startBtn.textContent = "⚔️ 開始：誰是得分王";
+      startBtn.textContent = "⚔️ 開始：齊心協力";
       startBtn.addEventListener("click", function () {
         beginClassWithMission(mission);
       });

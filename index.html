@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=95" />
+  <link rel="stylesheet" href="style.css?v=96" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,7 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v95</div>
+  <div class="build-version-badge" aria-label="版本號">v96</div>
 
   <div
     id="class-code-modal"
@@ -352,7 +352,7 @@
             － 刪減學生方框
           </button>
         </div>
-        <p class="tools-panel__desc">編輯模式下可調整；刪減須輸入方框編號與密碼，後方編號會自動遞補。</p>
+        <p class="tools-panel__desc">編輯模式下可調整人數、園地名稱；刪減須輸入方框編號與密碼，後方編號會自動遞補。</p>
       </div>
     </section>
 
@@ -556,7 +556,7 @@
             </div>
           </div>
         </div>
-        <div id="bulk-score-minus-section" class="bulk-score-zone bulk-score-zone--sub" hidden>
+        <div id="bulk-score-minus-section" class="bulk-score-zone bulk-score-zone--sub" hidden aria-label="減分區">
           <div class="bulk-score-zone__head" aria-hidden="true">減分</div>
           <div class="bulk-score-zone__body">
             <div class="group-score-panel__bulk-btns">
@@ -998,14 +998,15 @@
       </aside>
 
       <div id="mission-score-hud" class="mission-score-hud" hidden aria-live="polite">
-        <p class="mission-score-hud__label">本節累積得分</p>
+        <p class="mission-score-hud__label">本節全班累積得分</p>
+        <p class="mission-score-hud__goal">目標 50 分</p>
         <div id="mission-score-hud-value" class="mission-score-hud__score">0</div>
         <div class="mission-score-hud__footer">
           <div
             class="mission-score-hud__track"
             role="progressbar"
             aria-valuemin="0"
-            aria-valuemax="30"
+            aria-valuemax="50"
             aria-valuenow="0"
           >
             <div id="mission-score-hud-bar" class="mission-score-hud__bar"></div>
@@ -1080,6 +1081,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=95"></script>
+  <script src="script.js?v=96"></script>
 </body>
 </html>
