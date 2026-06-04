@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "91";
+  const APP_BUILD_VERSION = "92";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -1771,41 +1771,131 @@
     showAppToast("已新增 " + slot.id + " 號學生方框。", { variant: "success" });
   }
 
-  function removeLastStudentSlot() {
+  function remapSlotIdAfterRemoval(oldId, removedId) {
+    if (oldId === removedId) return null;
+    if (oldId > removedId) return oldId - 1;
+    return oldId;
+  }
+
+  function remapIdListAfterRemoval(ids, removedId) {
+    const next = [];
+    ids.forEach(function (id) {
+      const mapped = remapSlotIdAfterRemoval(id, removedId);
+      if (mapped !== null && next.indexOf(mapped) < 0) next.push(mapped);
+    });
+    return next;
+  }
+
+  function remapSlotEmojiTimersAfterRemoval(removedId) {
+    const next = {};
+    Object.keys(slotEmojiTimers).forEach(function (key) {
+      const oldId = parseInt(key, 10);
+      if (!Number.isFinite(oldId)) return;
+      const mapped = remapSlotIdAfterRemoval(oldId, removedId);
+      if (mapped === null) {
+        clearTimeout(slotEmojiTimers[key]);
+        return;
+      }
+      next[mapped] = slotEmojiTimers[key];
+    });
+    Object.keys(slotEmojiTimers).forEach(function (key) {
+      delete slotEmojiTimers[key];
+    });
+    Object.keys(next).forEach(function (key) {
+      slotEmojiTimers[key] = next[key];
+    });
+  }
+
+  function renumberSlotsSequential() {
+    slots.forEach(function (slot, index) {
+      slot.id = index + 1;
+    });
+  }
+
+  function rebuildSlotGrid() {
+    if (!gridEl) return;
+    gridEl.innerHTML = "";
+    slots.forEach(renderSlotElement);
+  }
+
+  function applyStudentSlotRemoval(removedId) {
+    const idx = slots.findIndex(function (s) {
+      return s.id === removedId;
+    });
+    if (idx < 0) return false;
+    slots.splice(idx, 1);
+    renumberSlotsSequential();
+    groups.forEach(function (g) {
+      g.memberIds = remapIdListAfterRemoval(g.memberIds, removedId);
+    });
+    bulkSelectedIds = remapIdListAfterRemoval(bulkSelectedIds, removedId);
+    if (activeScoreMenuSlotId !== null) {
+      activeScoreMenuSlotId = remapSlotIdAfterRemoval(
+        activeScoreMenuSlotId,
+        removedId
+      );
+    }
+    if (activeGrowthJournalSlotId !== null) {
+      activeGrowthJournalSlotId = remapSlotIdAfterRemoval(
+        activeGrowthJournalSlotId,
+        removedId
+      );
+    }
+    remapSlotEmojiTimersAfterRemoval(removedId);
+    closeAllQuickScoreMenus();
+    saveGroups();
+    saveSlots();
+    rebuildSlotGrid();
+    renderGroupButtons();
+    syncStudentCountUI();
+    updateLuckyCountLimits();
+    return true;
+  }
+
+  function removeStudentSlotById() {
     if (!teacherMode && !ensureTeacherModeOn()) return;
     if (getSlotCount() <= MIN_SLOT_COUNT) {
       showAppToast("至少需要保留 " + MIN_SLOT_COUNT + " 位學生。", { variant: "warn" });
       return;
     }
-    const slot = slots[slots.length - 1];
-    const removedId = slot.id;
-    showAppConfirm(
-      "確定移除 " +
-        removedId +
-        " 號「" +
-        slotDisplayName(slot) +
-        "」？\n其分數、組別歸屬將一併清除，且無法復原。",
-      { title: "刪減學生方框", confirmText: "移除", danger: true }
-    ).then(function (ok) {
-      if (!ok) return;
-      const el = document.querySelector('.slot[data-slot-id="' + removedId + '"]');
-      if (el) el.remove();
-      slots.pop();
-      groups.forEach(function (g) {
-        g.memberIds = g.memberIds.filter(function (id) {
-          return id <= getSlotCount();
+    const maxId = getSlotCount();
+    showAppPrompt(
+      "請輸入要刪減的方框編號（1～" + maxId + "）：",
+      "",
+      {
+        title: "刪減學生方框",
+        placeholder: "例如 5",
+      }
+    ).then(function (raw) {
+      if (raw === null) return;
+      const targetId = parseInt(String(raw).trim(), 10);
+      if (!Number.isFinite(targetId) || targetId < 1 || targetId > maxId) {
+        showAppToast("請輸入 1～" + maxId + " 之間的方框編號。", { variant: "warn" });
+        return;
+      }
+      const slot = getSlotById(targetId);
+      if (!slot) {
+        showAppToast("找不到 " + targetId + " 號方框。", { variant: "warn" });
+        return;
+      }
+      return confirmSitePassword().then(function (passwordOk) {
+        if (!passwordOk) return;
+        return showAppConfirm(
+          "確定移除 " +
+            targetId +
+            " 號「" +
+            slotDisplayName(slot) +
+            "」？\n其分數、組別歸屬將一併清除；後方方框編號會自動遞補，且無法復原。",
+          { title: "刪減學生方框", confirmText: "移除", danger: true }
+        ).then(function (ok) {
+          if (!ok) return;
+          if (!applyStudentSlotRemoval(targetId)) return;
+          showAppToast(
+            "已移除 " + targetId + " 號學生方框，後方編號已自動更新。",
+            { variant: "success" }
+          );
         });
       });
-      bulkSelectedIds = bulkSelectedIds.filter(function (id) {
-        return id <= getSlotCount();
-      });
-      if (activeScoreMenuSlotId === removedId) activeScoreMenuSlotId = null;
-      saveGroups();
-      saveSlots();
-      renderGroupButtons();
-      syncStudentCountUI();
-      updateLuckyCountLimits();
-      showAppToast("已移除 " + removedId + " 號學生方框。", { variant: "success" });
     });
   }
 
@@ -1837,7 +1927,7 @@
       });
     }
     if (addBtn) addBtn.addEventListener("click", addStudentSlot);
-    if (removeBtn) removeBtn.addEventListener("click", removeLastStudentSlot);
+    if (removeBtn) removeBtn.addEventListener("click", removeStudentSlotById);
     if (titleEl) {
       titleEl.addEventListener("dblclick", function () {
         if (!teacherMode && !ensureTeacherModeOn()) return;
@@ -1895,10 +1985,10 @@
   const SCORE_FX_STAR_HUES = [45, 120, 195, 270, 330, 15];
 
   function getSlotScoreFxLevel(score) {
-    if (score >= 500) return 5;
-    if (score >= 350) return 4;
-    if (score >= 250) return 3;
-    if (score >= 150) return 2;
+    if (score >= 250) return 5;
+    if (score >= 200) return 4;
+    if (score >= 150) return 3;
+    if (score >= 100) return 2;
     if (score >= 50) return 1;
     return 0;
   }
@@ -1906,7 +1996,7 @@
   function renderSlotRipples(stage, slot, score) {
     if (!stage) return;
     let ripplesEl = stage.querySelector(".slot__fx-ripples");
-    if (score < 250) {
+    if (score < 150) {
       if (ripplesEl) ripplesEl.hidden = true;
       return;
     }
@@ -1928,7 +2018,7 @@
   function renderSlotStars(stage, slot, score) {
     if (!stage) return;
     let starsEl = stage.querySelector(".slot__fx-stars");
-    if (score < 350) {
+    if (score < 200) {
       if (starsEl) starsEl.hidden = true;
       return;
     }
@@ -1953,7 +2043,7 @@
 
   function renderSlotCrown(el, score) {
     let crownEl = el.querySelector(".slot__fx-crown");
-    if (score < 500) {
+    if (score < 250) {
       if (crownEl) crownEl.hidden = true;
       return;
     }
@@ -5227,7 +5317,8 @@
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "mission-pick-item";
+      btn.className =
+        "mission-pick-item mission-pick-item--" + mission.id;
       if (mission.id === currentId) btn.classList.add("is-current");
       btn.innerHTML =
         '<span class="mission-pick-item__title">' +

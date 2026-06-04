@@ -3955,7 +3955,7 @@ body.bulk-pick-active .slot {
   }
 }
 
-/* ── 分數階梯動物特效（50 / 150 / 250 / 350 / 500） ── */
+/* ── 分數階梯動物特效（50 / 100 / 150 / 200 / 250） ── */
 
 .slot--fx-glow .slot__viewer {
   filter:
@@ -5374,12 +5374,13 @@ body:not(.teacher-mode-active) .mission-reminder-hud__pick-btn {
 }
 
 .mission-pick-modal__card {
-  width: min(92vw, 480px);
-  max-height: min(85vh, 640px);
+  width: min(94vw, 560px);
+  max-height: min(88vh, 720px);
   display: flex;
   flex-direction: column;
-  padding: 1.25rem 1.15rem 1.1rem;
-  border-radius: 18px;
+  padding: 1.45rem 1.35rem 1.2rem;
+  border-radius: 20px;
+  color: #1a1208;
   background: linear-gradient(
     165deg,
     rgba(255, 253, 231, 0.98) 0%,
@@ -5390,92 +5391,125 @@ body:not(.teacher-mode-active) .mission-reminder-hud__pick-btn {
 }
 
 .mission-pick-modal__title {
-  margin: 0 0 0.35rem;
-  font-size: 1.15rem;
+  margin: 0 0 0.4rem;
+  font-size: 1.5rem;
   font-weight: 900;
-  color: #7c2d12;
+  color: #1a1208;
   text-align: center;
 }
 
 .mission-pick-modal__hint {
-  margin: 0 0 0.75rem;
-  font-size: 0.82rem;
+  margin: 0 0 0.9rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  color: #9a3412;
+  color: #422006;
   text-align: center;
 }
 
 .mission-pick-list {
   list-style: none;
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
   padding: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.6rem;
 }
 
 .mission-pick-item {
   display: block;
   width: 100%;
-  padding: 0.65rem 0.75rem;
-  border: 2px solid rgba(217, 119, 6, 0.28);
-  border-radius: 12px;
+  padding: 0.85rem 0.95rem;
+  border: 2px solid rgba(120, 53, 15, 0.22);
+  border-radius: 14px;
   text-align: left;
   font-family: inherit;
   cursor: pointer;
-  background: rgba(255, 255, 255, 0.72);
+  color: #1a1208;
   transition:
     border-color 0.15s ease,
     background 0.15s ease,
-    transform 0.15s ease;
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.mission-pick-item--harvest {
+  background: linear-gradient(135deg, #fef9c3 0%, #fde68a 55%, #fcd34d 100%);
+  border-color: rgba(202, 138, 4, 0.45);
+}
+
+.mission-pick-item--praise {
+  background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 55%, #f9a8d4 100%);
+  border-color: rgba(219, 39, 119, 0.35);
+}
+
+.mission-pick-item--active {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 55%, #93c5fd 100%);
+  border-color: rgba(37, 99, 235, 0.35);
+}
+
+.mission-pick-item--rules {
+  background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 55%, #6ee7b7 100%);
+  border-color: rgba(5, 150, 105, 0.35);
+}
+
+.mission-pick-item--scoreKing {
+  background: linear-gradient(135deg, #ede9fe 0%, #ddd6fe 55%, #c4b5fd 100%);
+  border-color: rgba(109, 40, 217, 0.35);
 }
 
 .mission-pick-item:hover {
-  border-color: rgba(249, 115, 22, 0.55);
-  background: rgba(255, 255, 255, 0.95);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(61, 37, 10, 0.18);
+  filter: brightness(1.03);
 }
 
 .mission-pick-item.is-current {
-  border-color: rgba(16, 185, 129, 0.65);
-  background: linear-gradient(
-    180deg,
-    rgba(209, 250, 229, 0.95) 0%,
-    rgba(167, 243, 208, 0.9) 100%
-  );
+  border-width: 3px;
+  border-color: rgba(16, 185, 129, 0.75);
+  box-shadow:
+    0 0 0 2px rgba(16, 185, 129, 0.2),
+    0 10px 24px rgba(16, 185, 129, 0.22);
 }
 
 .mission-pick-item__title {
   display: block;
-  margin-bottom: 0.25rem;
-  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+  font-size: 1.18rem;
   font-weight: 900;
-  color: #7c2d12;
+  color: #1a1208;
 }
 
 .mission-pick-item__desc {
   display: block;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 700;
-  line-height: 1.45;
-  color: #9a3412;
+  line-height: 1.5;
+  color: #422006;
+}
+
+.mission-pick-item__desc strong {
+  color: #1a1208;
+  font-weight: 900;
 }
 
 .mission-pick-item__badge {
   display: inline-block;
-  margin-top: 0.35rem;
-  padding: 0.12rem 0.4rem;
-  border-radius: 6px;
-  font-size: 0.65rem;
+  margin-top: 0.45rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.88rem;
   font-weight: 900;
   color: #065f46;
-  background: rgba(16, 185, 129, 0.2);
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(16, 185, 129, 0.35);
 }
 
 .mission-pick-modal__close {
   width: 100%;
-  color: #422006;
+  font-size: 1.05rem;
+  padding: 0.7rem 1rem;
+  color: #1a1208;
   background: rgba(255, 255, 255, 0.94);
   border: 2px solid rgba(120, 53, 15, 0.28);
 }
