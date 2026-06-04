@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "111";
+  const APP_BUILD_VERSION = "112";
   const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
@@ -69,6 +69,10 @@
     "hog",
   ];
 
+  /** 一般班級可用的 22 種動物（不含開發專用 hog） */
+  const ANIMALS_PUBLIC = ANIMALS.filter(function (animal) {
+    return animal !== "hog";
+  });
   /** 更改動物選單中不顯示的物種（仍可用於預設分配） */
   const ANIMALS_HIDDEN_FROM_PICKER = ["hog"];
   const DEVELOPER_MODE_PRIVILEGES = [
@@ -660,6 +664,7 @@
   function refreshDeveloperModeUI() {
     document.body.classList.toggle("developer-mode-active", developerMode);
     updateBuildVersionBadge();
+    sanitizeAllSlotAnimalPolicies();
     syncSlotsHogDisplayAfterDevToggle();
   }
 
@@ -809,6 +814,7 @@
       };
     }).map(function (slot) {
       fixLegacySlotAnimal(slot);
+      sanitizeSlotAnimalPolicy(slot);
       return slot;
     });
   }
@@ -1111,6 +1117,7 @@
           } else {
             s.emoji = DEFAULT_EMOJI;
           }
+          sanitizeSlotAnimalPolicy(s);
         });
       } else if (options.initial) {
         slots = createDefaultSlots();
@@ -2287,7 +2294,25 @@
   }
 
   function animalForSlot(id) {
-    return ANIMALS[(id - 1) % ANIMALS.length];
+    if (!ANIMALS_PUBLIC.length) return "crab";
+    return ANIMALS_PUBLIC[(id - 1) % ANIMALS_PUBLIC.length];
+  }
+
+  function sanitizeSlotAnimalPolicy(slot) {
+    if (!slot) return;
+    if (slot.animal === "hog" && !isHogAnimalAllowed()) {
+      slot.animal = animalForSlot(slot.id);
+    }
+  }
+
+  function sanitizeAllSlotAnimalPolicies() {
+    let changed = false;
+    slots.forEach(function (slot) {
+      const before = slot.animal;
+      sanitizeSlotAnimalPolicy(slot);
+      if (slot.animal !== before) changed = true;
+    });
+    if (changed) saveSlots();
   }
 
   /** 修正舊版錯誤預設（1 號應為河狸） */
@@ -5575,6 +5600,7 @@
     });
 
     if (!applied) {
+      discardLastScoreUndoSnapshot();
       if (delta > 0) {
         showAppToast("中選學生均在睡眠中，無法加分。", { variant: "warn" });
       }
@@ -7408,8 +7434,22 @@
     renderSlotScoreFx(el, slot);
   }
 
+  function pruneOrphanSlotElements() {
+    if (!gridEl) return;
+    const validIds = {};
+    slots.forEach(function (slot) {
+      validIds[String(slot.id)] = true;
+    });
+    gridEl.querySelectorAll(".slot[data-slot-id]").forEach(function (el) {
+      if (!validIds[el.dataset.slotId]) {
+        el.remove();
+      }
+    });
+  }
+
   function renderAll() {
     if (!gridEl) return;
+    pruneOrphanSlotElements();
     slots.forEach(renderSlotElement);
     renderGroupButtons();
   }
@@ -7863,6 +7903,7 @@
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);
     syncAllSlotsAutoHatch();
+    sanitizeAllSlotAnimalPolicies();
     syncStudentCountUI();
     updateLuckyCountLimits();
     loadGroups();
