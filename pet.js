@@ -765,6 +765,14 @@
     }
     dashSlot = slot;
     animalName = dashSlot.animal || "crab";
+    if (animalName === "hog") {
+      const rotation = [
+        "beaver", "polar", "crab", "penguin", "seal", "otter", "fox", "wolf",
+        "bear", "panda", "koala", "rabbit", "cat", "dog", "lion", "tiger",
+        "elephant", "giraffe", "zebra", "horse", "deer", "monkey",
+      ];
+      animalName = rotation[(dashSlot.id - 1) % rotation.length];
+    }
     modelSrc = "models/animal-" + animalName + ".glb";
     boot();
   });

@@ -1832,12 +1832,19 @@ body.lucky-draw-running .slot {
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-.build-version-badge {
+.build-version-badge-wrap {
   position: fixed;
   top: 0.65rem;
   right: 0.85rem;
   z-index: 230;
   display: none;
+}
+
+body.teacher-mode-active .build-version-badge-wrap {
+  display: block;
+}
+
+.build-version-badge {
   padding: 0.28rem 0.6rem;
   border-radius: 999px;
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -1849,11 +1856,47 @@ body.lucky-draw-running .slot {
   line-height: 1;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.32);
   user-select: none;
+  cursor: pointer;
 }
 
-body.teacher-mode-active .build-version-badge {
-  display: block;
-  cursor: pointer;
+.build-version-dev-tip {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  min-width: min(280px, 72vw);
+  max-width: min(320px, 86vw);
+  padding: 0.55rem 0.7rem 0.6rem;
+  border-radius: 0.65rem;
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e2e8f0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.45;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+}
+
+.build-version-dev-tip[hidden] {
+  display: none !important;
+}
+
+.build-version-dev-tip__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 900;
+  color: #fde68a;
+  letter-spacing: 0.04em;
+}
+
+.build-version-dev-tip__list {
+  margin: 0;
+  padding: 0 0 0 1.05rem;
+  list-style-type: disc;
+}
+
+.build-version-dev-tip__list li + li {
+  margin-top: 0.2rem;
 }
 
 .build-version-badge--dev {
@@ -4991,7 +5034,7 @@ body.teacher-mode-active
   cursor: pointer;
 }
 
-.file-protocol-banner ~ .build-version-badge,
+.file-protocol-banner ~ .build-version-badge-wrap,
 .file-protocol-banner ~ .teacher-mode-btn {
   margin-top: 2.5rem;
 }

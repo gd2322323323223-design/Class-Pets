@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "108";
+  const APP_BUILD_VERSION = "109";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
@@ -70,6 +70,10 @@
 
   /** 更改動物選單中不顯示的物種（仍可用於預設分配） */
   const ANIMALS_HIDDEN_FROM_PICKER = ["hog"];
+  const DEVELOPER_MODE_PRIVILEGES = [
+    "班級設定：重置此班級為空白資料",
+    "編輯模式：為學生指定「小豬（hog）」3D 神獸",
+  ];
 
   const IDLE_ANIM = "idle";
   const IDLE_PHASE_MS = 10000;
@@ -543,6 +547,53 @@
       ? "v" + APP_BUILD_VERSION + "·"
       : "v" + APP_BUILD_VERSION;
     badge.classList.toggle("build-version-badge--dev", developerMode);
+    renderDeveloperPrivilegesTip();
+  }
+
+  function renderDeveloperPrivilegesTip() {
+    const tip = document.getElementById("build-version-dev-tip");
+    const list = document.getElementById("build-version-dev-tip-list");
+    if (!tip || !list) return;
+    list.innerHTML = "";
+    DEVELOPER_MODE_PRIVILEGES.forEach(function (line) {
+      const li = document.createElement("li");
+      li.textContent = line;
+      list.appendChild(li);
+    });
+    tip.hidden = !developerMode;
+  }
+
+  function initDeveloperPrivilegesTip() {
+    const wrap = document.querySelector(".build-version-badge-wrap");
+    const badge = document.querySelector(".build-version-badge");
+    const tip = document.getElementById("build-version-dev-tip");
+    if (!wrap || !badge || !tip) return;
+
+    let hideTipTimer = null;
+
+    function showTip() {
+      if (!developerMode) return;
+      if (hideTipTimer !== null) {
+        clearTimeout(hideTipTimer);
+        hideTipTimer = null;
+      }
+      renderDeveloperPrivilegesTip();
+      tip.hidden = false;
+    }
+
+    function scheduleHideTip() {
+      if (hideTipTimer !== null) clearTimeout(hideTipTimer);
+      hideTipTimer = setTimeout(function () {
+        tip.hidden = true;
+        hideTipTimer = null;
+      }, 120);
+    }
+
+    wrap.addEventListener("mouseenter", showTip);
+    wrap.addEventListener("mouseleave", scheduleHideTip);
+    tip.addEventListener("mouseenter", showTip);
+    tip.addEventListener("mouseleave", scheduleHideTip);
+    renderDeveloperPrivilegesTip();
   }
 
   function tryActivateDeveloperMode() {
@@ -598,6 +649,22 @@
   function refreshDeveloperModeUI() {
     document.body.classList.toggle("developer-mode-active", developerMode);
     updateBuildVersionBadge();
+    syncSlotsHogDisplayAfterDevToggle();
+  }
+
+  function syncSlotsHogDisplayAfterDevToggle() {
+    slots.forEach(function (slot) {
+      const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
+      if (!el || !slot.hatched) return;
+      const stage = el.querySelector(".slot__stage");
+      if (stage) {
+        delete stage.dataset.stageKey;
+        renderSlotStage(stage, slot);
+      }
+      updateSlotNavInteractable(el, slot);
+      renderSlotScoreFx(el, slot);
+    });
+    if (animalPickSlotId) renderAnimalPickList();
   }
 
   function syncDeveloperToolsVisibility() {
@@ -2218,8 +2285,21 @@
     return ANIMALS.indexOf(name) >= 0;
   }
 
+  function isHogAnimalAllowed() {
+    return developerMode;
+  }
+
+  function getSlotDisplayAnimal(slot) {
+    if (!slot) return "crab";
+    if (slot.animal === "hog" && !isHogAnimalAllowed()) {
+      return animalForSlot(slot.id);
+    }
+    return slot.animal;
+  }
+
   function getPickableAnimals() {
     return ANIMALS.filter(function (animal) {
+      if (animal === "hog") return isHogAnimalAllowed();
       return ANIMALS_HIDDEN_FROM_PICKER.indexOf(animal) < 0;
     });
   }
@@ -2635,7 +2715,7 @@
   function createBeastModelViewer(slot, className, extraAttrs) {
     const mv = document.createElement("model-viewer");
     mv.className = className;
-    mv.src = "models/animal-" + slot.animal + ".glb";
+    mv.src = "models/animal-" + getSlotDisplayAnimal(slot) + ".glb";
     mv.alt = slot.name + " 的神獸";
     mv.setAttribute("autoplay", "");
     mv.setAttribute("camera-orbit", "0deg 75deg auto");
@@ -2657,7 +2737,7 @@
   function createBeastFallback(slot, className) {
     const wrap = document.createElement("div");
     wrap.className = className + " slot__beast-fallback";
-    const label = ANIMAL_LABELS[slot.animal] || slot.animal;
+    const label = ANIMAL_LABELS[getSlotDisplayAnimal(slot)] || slot.animal;
     wrap.innerHTML =
       '<span class="slot__beast-fallback-icon" aria-hidden="true">🐾</span>' +
       '<span class="slot__beast-fallback-label">' +
@@ -3956,15 +4036,25 @@
     btn.disabled = scoreUndoStack.length === 0;
   }
 
+  function scoreToastStudentLabel(slot) {
+    return slot.name && slot.name !== DEFAULT_NAME
+      ? slot.name
+      : slot.id + "號學生";
+  }
+
   function showScoreToast(slot, delta) {
     if (!delta) return;
     const toast = document.getElementById("score-toast");
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
 
-    const name =
-      slot.name && slot.name !== DEFAULT_NAME ? slot.name : slot.id + "號學生";
-    textEl.textContent = name + "表現佳！" + formatScoreDelta(delta) + "！";
+    const name = scoreToastStudentLabel(slot);
+    if (delta > 0) {
+      textEl.textContent = name + "表現佳！" + formatScoreDelta(delta) + "！";
+    } else {
+      textEl.textContent =
+        "哎呀！" + name + "須再努力，" + formatScoreDelta(delta) + "。";
+    }
 
     if (scoreToastTimeoutId !== null) {
       clearTimeout(scoreToastTimeoutId);
@@ -3991,8 +4081,17 @@
     const textEl = document.getElementById("score-toast-text");
     if (!toast || !textEl) return;
 
-    textEl.textContent =
-      "「" + group.name + "」全組表現佳！" + formatScoreDelta(delta) + "！";
+    if (delta > 0) {
+      textEl.textContent =
+        "「" + group.name + "」全組表現佳！" + formatScoreDelta(delta) + "！";
+    } else {
+      textEl.textContent =
+        "哎呀！「" +
+        group.name +
+        "」須再努力，" +
+        formatScoreDelta(delta) +
+        "。";
+    }
 
     if (scoreToastTimeoutId !== null) {
       clearTimeout(scoreToastTimeoutId);
@@ -6921,6 +7020,23 @@
     const numEl = el.querySelector(".slot__num");
     if (!numEl) return;
 
+    if (teacherMode) {
+      numEl.setAttribute("aria-label", slot.id + " 號");
+      numEl.onclick = function (ev) {
+        ev.stopPropagation();
+        if (bulkPickActive) toggleBulkSlot(slot.id);
+      };
+      numEl.onkeydown = function (e) {
+        if (!bulkPickActive) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleBulkSlot(slot.id);
+        }
+      };
+      return;
+    }
+
     const name =
       slot.name && slot.name !== DEFAULT_NAME ? slot.name : slot.id + " 號學生";
     numEl.setAttribute(
@@ -6978,7 +7094,7 @@
 
   function getSlotStageKey(slot) {
     if (slot.hatched) {
-      return "h:" + slot.animal;
+      return "h:" + getSlotDisplayAnimal(slot);
     }
     return "e:" + eggHueForSlot(slot.id);
   }
@@ -7224,6 +7340,10 @@
   function applyAnimalChange(slotId, animal) {
     const slot = getSlotById(slotId);
     if (!slot || !isValidAnimal(animal)) return;
+    if (animal === "hog" && !isHogAnimalAllowed()) {
+      showAppToast("小豬（hog）3D 神獸僅開發人模式可用。", { variant: "warn" });
+      return;
+    }
     slot.animal = animal;
     saveSlots();
     renderSlotElement(slot);
@@ -7558,8 +7678,6 @@
     }
 
     if (teacherMode) {
-      closeQuickScoreMenu();
-      onSlotTeacherAction(slotId);
       return;
     }
 
@@ -7616,6 +7734,7 @@
   function continueBoot() {
     updateBuildVersionBadge();
     initBuildVersionBadgeSecret();
+    initDeveloperPrivilegesTip();
     refreshDeveloperModeUI();
     syncDeveloperToolsVisibility();
     showFileProtocolBanner();

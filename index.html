@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=108" />
+  <link rel="stylesheet" href="style.css?v=109" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -44,7 +44,18 @@
     </div>
   </div>
 
-  <div class="build-version-badge" aria-label="版本號">v108</div>
+  <div class="build-version-badge-wrap">
+    <div class="build-version-badge" aria-label="版本號">v109</div>
+    <div
+      id="build-version-dev-tip"
+      class="build-version-dev-tip"
+      role="tooltip"
+      hidden
+    >
+      <p class="build-version-dev-tip__title">開發人員專屬權限</p>
+      <ul id="build-version-dev-tip-list" class="build-version-dev-tip__list"></ul>
+    </div>
+  </div>
 
   <div
     id="class-code-modal"
@@ -1160,6 +1171,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=108"></script>
+  <script src="script.js?v=109"></script>
 </body>
 </html>
