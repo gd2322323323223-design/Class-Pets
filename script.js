@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "102";
+  const APP_BUILD_VERSION = "103";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -3445,10 +3445,25 @@
 
   function formatTimerIntervalButtonLabel(sec) {
     sec = clampTimerIntervalCueSec(sec);
-    if (sec >= 60 && sec % 60 === 0) {
-      return "⏰ " + sec / 60 + "分";
+    const min = Math.floor(sec / 60);
+    const remSec = sec % 60;
+    let text = "";
+    if (sec < 60) {
+      text = remSec + "秒";
+    } else if (remSec === 0) {
+      text = min + "分";
+    } else {
+      text = min + "分" + remSec + "秒";
     }
-    return "⏰ " + sec + "秒";
+    return "⏰ " + text;
+  }
+
+  function formatTimerSoundButtonLabel(enabled, btn) {
+    const icon = enabled ? "🔔" : "🔕";
+    if (btn && btn.closest("#timer-mini-widget")) {
+      return icon;
+    }
+    return icon + " 音效";
   }
 
   function getTimerSessionElapsedMs() {
@@ -3521,7 +3536,7 @@
     document.querySelectorAll(".js-timer-sound-toggle").forEach(function (btn) {
       btn.classList.toggle("is-on", timerSoundEnabled);
       btn.setAttribute("aria-pressed", timerSoundEnabled ? "true" : "false");
-      btn.textContent = timerSoundEnabled ? "🔔 音效" : "🔕 音效";
+      btn.textContent = formatTimerSoundButtonLabel(timerSoundEnabled, btn);
     });
     document.querySelectorAll(".js-timer-interval-cue").forEach(function (btn) {
       btn.textContent = formatTimerIntervalButtonLabel(timerIntervalCueSec);
@@ -6316,7 +6331,7 @@
             ? JSON.parse(data.classDisplay)
             : data.classDisplay;
         if (cd && typeof cd.gardenName === "string" && cd.gardenName.trim()) {
-          gardenDisplayName = cd.gardenName.trim();
+          gardenDisplayName = normalizeGardenDisplayName(cd.gardenName);
         }
       } catch (e) {}
     }
