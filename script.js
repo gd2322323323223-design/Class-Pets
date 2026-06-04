@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "103";
+  const APP_BUILD_VERSION = "104";
 
   const STORAGE_KEY = "classroom-dashboard-v1";
   const GROUPS_STORAGE_KEY = "classroom-dashboard-groups-v1";
@@ -5088,19 +5088,18 @@
     if (!modal || !bodyEl) return;
 
     const count = winnerIds.length;
-    const fewWinners = count > 0 && count <= 6;
 
     bodyEl.innerHTML = "";
-    bodyEl.className = "lucky-modal__body";
-    if (fewWinners) {
-      bodyEl.classList.add("lucky-modal__body--few");
+    bodyEl.className = "lucky-modal__body lucky-modal__body--grid";
+    if (count > 0) {
       bodyEl.classList.add("lucky-modal__body--count-" + count);
-    } else {
-      bodyEl.classList.add("lucky-modal__body--many");
+      if (count >= 13) {
+        bodyEl.classList.add("lucky-modal__body--count-dense");
+      }
     }
 
     if (cardEl) {
-      cardEl.classList.toggle("lucky-modal__card--many-winners", count >= 7);
+      cardEl.classList.toggle("lucky-modal__card--grid-winners", count >= 7);
     }
 
     winnerIds.forEach(function (id) {
@@ -5121,7 +5120,7 @@
       bodyEl.innerHTML = "";
       bodyEl.className = "lucky-modal__body";
     }
-    if (cardEl) cardEl.classList.remove("lucky-modal__card--many-winners");
+    if (cardEl) cardEl.classList.remove("lucky-modal__card--grid-winners");
     luckyDrawWinnerIds = [];
     if (modal) modal.hidden = true;
     document.body.classList.remove("lucky-modal-open");
