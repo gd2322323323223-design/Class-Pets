@@ -7017,8 +7017,8 @@
         wakeBtn = document.createElement("button");
         wakeBtn.type = "button";
         wakeBtn.className = "slot__life-wakeup";
-        wakeBtn.textContent = "睡覺";
-        wakeBtn.setAttribute("aria-label", "睡覺起床並恢復生命值");
+        wakeBtn.textContent = "睡醒";
+        wakeBtn.setAttribute("aria-label", "睡醒並恢復生命值與表情");
         wakeBtn.addEventListener("click", function (ev) {
           ev.stopPropagation();
           wakeUpSlot(slot.id);
