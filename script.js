@@ -4,7 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "107";
+  const APP_BUILD_VERSION = "108";
+  const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
   const DEV_MODE_BADGE_CLICK_MS = 900;
@@ -2110,11 +2111,16 @@
       ripplesEl = document.createElement("div");
       ripplesEl.className = "slot__fx-ripples";
       ripplesEl.setAttribute("aria-hidden", "true");
-      stage.insertBefore(ripplesEl, stage.firstChild);
       for (let i = 1; i <= 3; i++) {
         const ring = document.createElement("span");
         ring.className = "slot__fx-ripple slot__fx-ripple--" + i;
         ripplesEl.appendChild(ring);
+      }
+      const anchor = stage.querySelector(".slot__viewer, .slot__egg, model-viewer");
+      if (anchor) {
+        anchor.after(ripplesEl);
+      } else {
+        stage.appendChild(ripplesEl);
       }
     }
     ripplesEl.hidden = false;
@@ -2279,10 +2285,26 @@
     return true;
   }
 
+  function maybeAutoUnhatchSlot(slot) {
+    if (!slot || !slot.hatched) return false;
+    if (slot.score >= HATCH_THRESHOLD) return false;
+    slot.hatched = false;
+    return true;
+  }
+
+  function syncSlotHatchState(slot, opts) {
+    opts = opts || {};
+    if (!slot) return false;
+    if (slot.score >= HATCH_THRESHOLD) {
+      return maybeAutoHatchSlot(slot, opts);
+    }
+    return maybeAutoUnhatchSlot(slot);
+  }
+
   function syncAllSlotsAutoHatch() {
     let changed = false;
     slots.forEach(function (slot) {
-      if (maybeAutoHatchSlot(slot)) changed = true;
+      if (syncSlotHatchState(slot)) changed = true;
     });
     if (changed) saveSlots();
   }
@@ -2329,7 +2351,7 @@
     slot.score = clampScore(slot.score + delta);
     applyScoreReaction(slot.id, delta);
     recordSlotScoreHistory(slot, delta);
-    if (delta > 0) maybeAutoHatchSlot(slot, { withFeedback: true });
+    syncSlotHatchState(slot, { withFeedback: delta > 0 });
     return true;
   }
 
@@ -4426,6 +4448,130 @@
     }
   }
 
+  function positionGroupPanelDefault(host) {
+    if (!host) return;
+    const margin = 12;
+    const w = host.offsetWidth || 210;
+    host.style.left = Math.max(margin, window.innerWidth - w - margin) + "px";
+    host.style.top = Math.max(margin, window.innerHeight * 0.22) + "px";
+  }
+
+  function loadGroupPanelPosition(host) {
+    if (!host) return false;
+    try {
+      const raw = localStorage.getItem(GROUP_PANEL_POS_STORAGE_KEY);
+      if (!raw) return false;
+      const pos = JSON.parse(raw);
+      if (!pos || !Number.isFinite(pos.left) || !Number.isFinite(pos.top)) {
+        return false;
+      }
+      host.style.left = pos.left + "px";
+      host.style.top = pos.top + "px";
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function saveGroupPanelPosition(host) {
+    if (!host) return;
+    try {
+      const rect = host.getBoundingClientRect();
+      localStorage.setItem(
+        GROUP_PANEL_POS_STORAGE_KEY,
+        JSON.stringify({ left: Math.round(rect.left), top: Math.round(rect.top) })
+      );
+    } catch (e) {}
+  }
+
+  function clampGroupPanelPosition(host) {
+    if (!host) return;
+    const margin = 8;
+    const rect = host.getBoundingClientRect();
+    const maxLeft = Math.max(margin, window.innerWidth - rect.width - margin);
+    const maxTop = Math.max(margin, window.innerHeight - rect.height - margin);
+    const left = Math.min(Math.max(rect.left, margin), maxLeft);
+    const top = Math.min(Math.max(rect.top, margin), maxTop);
+    host.style.left = left + "px";
+    host.style.top = top + "px";
+  }
+
+  function initGroupPanelDrag() {
+    const host = document.getElementById("group-score-panel-host");
+    const panel = document.getElementById("group-score-panel");
+    const handle = panel ? panel.querySelector(".group-score-panel__head") : null;
+    if (!host || !handle) return;
+
+    host.style.position = "fixed";
+    if (!loadGroupPanelPosition(host)) {
+      positionGroupPanelDefault(host);
+    }
+    clampGroupPanelPosition(host);
+
+    let dragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragOriginLeft = 0;
+    let dragOriginTop = 0;
+
+    function onDragStart(clientX, clientY) {
+      dragging = true;
+      dragStartX = clientX;
+      dragStartY = clientY;
+      const rect = host.getBoundingClientRect();
+      dragOriginLeft = rect.left;
+      dragOriginTop = rect.top;
+      host.classList.add("is-dragging");
+    }
+
+    function onDragMove(clientX, clientY) {
+      if (!dragging) return;
+      const dx = clientX - dragStartX;
+      const dy = clientY - dragStartY;
+      host.style.left = dragOriginLeft + dx + "px";
+      host.style.top = dragOriginTop + dy + "px";
+      clampGroupPanelPosition(host);
+    }
+
+    function onDragEnd() {
+      if (!dragging) return;
+      dragging = false;
+      host.classList.remove("is-dragging");
+      saveGroupPanelPosition(host);
+    }
+
+    handle.addEventListener("mousedown", function (ev) {
+      if (ev.target.closest("#btn-group-manage")) return;
+      ev.preventDefault();
+      onDragStart(ev.clientX, ev.clientY);
+    });
+    handle.addEventListener(
+      "touchstart",
+      function (ev) {
+        if (ev.target.closest("#btn-group-manage")) return;
+        if (!ev.touches || !ev.touches[0]) return;
+        ev.preventDefault();
+        onDragStart(ev.touches[0].clientX, ev.touches[0].clientY);
+      },
+      { passive: false }
+    );
+
+    document.addEventListener("mousemove", function (ev) {
+      if (!dragging) return;
+      onDragMove(ev.clientX, ev.clientY);
+    });
+    document.addEventListener("mouseup", onDragEnd);
+    document.addEventListener("touchmove", function (ev) {
+      if (!dragging || !ev.touches || !ev.touches[0]) return;
+      onDragMove(ev.touches[0].clientX, ev.touches[0].clientY);
+    });
+    document.addEventListener("touchend", onDragEnd);
+
+    window.addEventListener("resize", function () {
+      clampGroupPanelPosition(host);
+    });
+  }
+
   function ensureGroupPanel() {
     const host = document.getElementById("group-score-panel-host");
     if (!host || groupPanelInitialized) return;
@@ -4447,6 +4593,7 @@
 
     host.appendChild(panel);
     initBulkScoreControls();
+    initGroupPanelDrag();
 
     document.getElementById("btn-group-manage").addEventListener("click", function () {
       if (!teacherMode && !ensureTeacherModeOn()) return;

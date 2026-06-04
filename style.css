@@ -4092,24 +4092,41 @@ body:not(.teacher-mode-active) .group-members-modal__add-section {
   border: 1px solid rgba(120, 53, 15, 0.28);
 }
 
-/* 6 欄網格 + 右側豎排組別加分 */
+/* 6 欄網格（組別加分為可拖曳浮動面板） */
 .dashboard-layout {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.85rem;
+  display: block;
 }
 
 .group-score-panel-host {
-  flex: 0 0 auto;
-  width: min(210px, 20vw);
-  position: sticky;
-  top: 0.5rem;
-  align-self: flex-start;
+  position: fixed;
+  z-index: 188;
+  width: min(220px, 44vw);
+  max-height: min(78vh, 720px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.group-score-panel-host.is-dragging {
+  z-index: 189;
+}
+
+.group-score-panel-host .group-score-panel {
+  width: 100%;
+}
+
+.group-score-panel__head {
+  cursor: grab;
+}
+
+.group-score-panel-host.is-dragging .group-score-panel__head {
+  cursor: grabbing;
 }
 
 .dashboard-grid {
-  flex: 1;
-  min-width: 0;
+  width: 100%;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 0.85rem;
@@ -4175,6 +4192,8 @@ body.bulk-pick-active .slot {
 .slot__viewer,
 .slot__egg,
 .slot__stage model-viewer {
+  position: relative;
+  z-index: 3;
   cursor: default;
 }
 
@@ -4429,12 +4448,12 @@ body.bulk-pick-active .slot {
 .slot__fx-ripples {
   position: absolute;
   left: 50%;
-  bottom: 8%;
-  width: 72%;
-  height: 42%;
+  bottom: 2%;
+  width: 78%;
+  height: 36%;
   transform: translateX(-50%);
   pointer-events: none;
-  z-index: 0;
+  z-index: 2;
   overflow: visible;
 }
 
@@ -4486,22 +4505,24 @@ body.bulk-pick-active .slot {
 }
 
 .slot--fx-border {
-  border-color: hsla(45, 88%, 68%, 0.92);
+  border-width: 2.5px;
+  border-color: hsla(var(--slot-border-glow-hue, 45), 94%, 74%, 0.98);
   box-shadow:
     0 6px 20px rgba(0, 0, 0, 0.18),
-    0 0 14px hsla(45, 100%, 58%, 0.72),
-    0 0 32px hsla(45, 95%, 52%, 0.42),
-    inset 0 0 16px hsla(45, 90%, 68%, 0.22);
+    0 0 16px hsla(var(--slot-border-glow-hue, 45), 100%, 64%, 0.92),
+    0 0 36px hsla(var(--slot-border-glow-hue, 45), 98%, 56%, 0.68),
+    0 0 52px hsla(var(--slot-border-glow-hue, 45), 95%, 50%, 0.42),
+    inset 0 0 22px hsla(var(--slot-border-glow-hue, 45), 92%, 70%, 0.32);
   animation: slotBorderGlowPulse 2.6s ease-in-out infinite;
 }
 
 .slot--fx-border:hover {
-  border-color: hsla(45, 92%, 72%, 0.98);
+  border-color: hsla(var(--slot-border-glow-hue, 45), 96%, 78%, 1);
   box-shadow:
     0 12px 32px rgba(0, 0, 0, 0.35),
-    0 0 18px hsla(45, 100%, 60%, 0.85),
-    0 0 40px hsla(45, 95%, 52%, 0.52),
-    inset 0 0 18px hsla(45, 90%, 68%, 0.28);
+    0 0 22px hsla(var(--slot-border-glow-hue, 45), 100%, 66%, 0.98),
+    0 0 48px hsla(var(--slot-border-glow-hue, 45), 98%, 56%, 0.78),
+    inset 0 0 24px hsla(var(--slot-border-glow-hue, 45), 92%, 72%, 0.38);
 }
 
 @keyframes slotBorderGlowPulse {
@@ -4509,16 +4530,16 @@ body.bulk-pick-active .slot {
   100% {
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.18),
-      0 0 12px hsla(45, 100%, 58%, 0.62),
-      0 0 28px hsla(45, 95%, 52%, 0.35),
-      inset 0 0 14px hsla(45, 90%, 68%, 0.18);
+      0 0 14px hsla(var(--slot-border-glow-hue, 45), 100%, 62%, 0.82),
+      0 0 32px hsla(var(--slot-border-glow-hue, 45), 98%, 54%, 0.52),
+      inset 0 0 18px hsla(var(--slot-border-glow-hue, 45), 92%, 68%, 0.26);
   }
   50% {
     box-shadow:
       0 6px 20px rgba(0, 0, 0, 0.18),
-      0 0 20px hsla(45, 100%, 62%, 0.88),
-      0 0 42px hsla(45, 95%, 55%, 0.55),
-      inset 0 0 20px hsla(45, 90%, 70%, 0.28);
+      0 0 24px hsla(var(--slot-border-glow-hue, 45), 100%, 68%, 1),
+      0 0 50px hsla(var(--slot-border-glow-hue, 45), 98%, 58%, 0.82),
+      inset 0 0 26px hsla(var(--slot-border-glow-hue, 45), 92%, 72%, 0.38);
   }
 }
 
@@ -5193,13 +5214,8 @@ body.teacher-mode-active .slot__footer-part--name:not(:disabled):hover {
 }
 
 @media (max-width: 1100px) {
-  .dashboard-layout {
-    flex-direction: column;
-  }
-
   .group-score-panel-host {
-    width: 100%;
-    position: static;
+    width: min(220px, 52vw);
   }
 
   .group-score-panel__buttons {
