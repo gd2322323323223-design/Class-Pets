@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=112" />
+  <link rel="stylesheet" href="style.css?v=113" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -45,7 +45,7 @@
   </div>
 
   <div class="build-version-badge-wrap">
-    <div class="build-version-badge" aria-label="版本號">v112</div>
+    <div class="build-version-badge" aria-label="版本號">v113</div>
     <div
       id="build-version-dev-tip"
       class="build-version-dev-tip"
@@ -697,7 +697,7 @@
         此組尚無成員，請在下方「加入學生」區域勾選學生加入。
       </p>
       <div id="group-members-score-row" class="group-members-modal__score-row" hidden>
-        <span class="group-members-modal__score-label">全組加分</span>
+        <span class="group-members-modal__score-label">全組加減分</span>
         <div id="group-members-score-btns" class="group-members-modal__score-btns"></div>
       </div>
       <div id="group-members-add-section" class="group-members-modal__add-section">
@@ -1128,12 +1128,13 @@
       class="class-progress-container"
       aria-label="全班守護神獸經驗值"
     >
-      <div id="class-progress-undo-redo" class="class-progress-undo-redo" hidden>
+      <div id="class-progress-undo-redo" class="class-progress-undo-redo">
         <button
           type="button"
           id="btn-score-redo"
           class="class-progress-undo-btn class-progress-redo-btn"
           title="取消復原（Ctrl+Y）"
+          hidden
           disabled
         >
           ↪ 取消復原
@@ -1186,6 +1187,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=112"></script>
+  <script src="script.js?v=113"></script>
 </body>
 </html>

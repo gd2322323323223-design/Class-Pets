@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "112";
+  const APP_BUILD_VERSION = "113";
   const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
@@ -936,7 +936,7 @@
         history: [],
       },
       timerSound: "1",
-      timerIntervalCue: "60",
+      timerIntervalCue: "0",
       mission: {
         currentDailyMissionId: null,
         missionReminderVisible: false,
@@ -976,7 +976,7 @@
         history: [],
       },
       timerSound: "1",
-      timerIntervalCue: "60",
+      timerIntervalCue: "0",
       mission: {
         currentDailyMissionId: null,
         missionReminderVisible: false,
@@ -3658,23 +3658,26 @@
     timerAlarmIntervalId = setInterval(playTimerAlarmFallback, 1400);
   }
 
-  const TIMER_INTERVAL_CUE_SEC_MIN = 1;
+  const TIMER_INTERVAL_CUE_SEC_MIN = 0;
   const TIMER_INTERVAL_CUE_SEC_MAX = 3600;
 
   function clampTimerIntervalCueSec(sec) {
     const n = Math.round(Number(sec));
     if (!Number.isFinite(n) || n < TIMER_INTERVAL_CUE_SEC_MIN) {
-      return 60;
+      return 0;
     }
     return Math.min(TIMER_INTERVAL_CUE_SEC_MAX, n);
   }
 
   function getTimerIntervalMs() {
-    return clampTimerIntervalCueSec(timerIntervalCueSec) * 1000;
+    const sec = clampTimerIntervalCueSec(timerIntervalCueSec);
+    if (sec <= 0) return 0;
+    return sec * 1000;
   }
 
   function formatTimerIntervalButtonLabel(sec) {
     sec = clampTimerIntervalCueSec(sec);
+    if (sec === 0) return "⏰ 不提示";
     const min = Math.floor(sec / 60);
     const remSec = sec % 60;
     let text = "";
@@ -3710,15 +3713,19 @@
   }
 
   function resetTimerIntervalMarksFromElapsed() {
-    timerIntervalCueMarks = Math.floor(
-      getTimerSessionElapsedMs() / getTimerIntervalMs()
-    );
+    const intervalMs = getTimerIntervalMs();
+    if (!intervalMs) {
+      timerIntervalCueMarks = 0;
+      return;
+    }
+    timerIntervalCueMarks = Math.floor(getTimerSessionElapsedMs() / intervalMs);
   }
 
   function checkTimerIntervalCues() {
     if (!timerRunning || !timerSoundEnabled) return;
-    const elapsed = getTimerSessionElapsedMs();
     const intervalMs = getTimerIntervalMs();
+    if (!intervalMs) return;
+    const elapsed = getTimerSessionElapsedMs();
     const mark = Math.floor(elapsed / intervalMs);
     if (mark > 0 && mark > timerIntervalCueMarks) {
       timerIntervalCueMarks = mark;
@@ -3792,7 +3799,7 @@
     min = Math.max(0, Math.min(60, min));
     sec = Math.max(0, Math.min(59, sec));
     let total = min * 60 + sec;
-    if (total < TIMER_INTERVAL_CUE_SEC_MIN) total = TIMER_INTERVAL_CUE_SEC_MIN;
+    if (total < 0) total = 0;
     if (total > TIMER_INTERVAL_CUE_SEC_MAX) total = TIMER_INTERVAL_CUE_SEC_MAX;
     return total;
   }
@@ -4104,10 +4111,6 @@
   }
 
   function undoLastScoreAction() {
-    if (!teacherMode) {
-      showAppToast("請先進入編輯模式。", { variant: "warn" });
-      return;
-    }
     if (!scoreUndoStack.length) {
       showAppToast("沒有可復原的加減分行動。", { variant: "warn" });
       return;
@@ -4147,12 +4150,13 @@
     const wrap = document.getElementById("class-progress-undo-redo");
     const undoBtn = document.getElementById("btn-score-undo");
     const redoBtn = document.getElementById("btn-score-redo");
-    if (wrap) wrap.hidden = !teacherMode;
+    if (wrap) wrap.hidden = false;
     if (undoBtn) {
       undoBtn.disabled = scoreUndoStack.length === 0;
       undoBtn.setAttribute("aria-disabled", undoBtn.disabled ? "true" : "false");
     }
     if (redoBtn) {
+      redoBtn.hidden = !teacherMode;
       redoBtn.disabled = scoreRedoStack.length === 0;
       redoBtn.setAttribute("aria-disabled", redoBtn.disabled ? "true" : "false");
     }
@@ -4308,7 +4312,7 @@
         "已揀選 " +
         count +
         " 人" +
-        (teacherMode ? "，可加分或減分：" : "，點擊加分：");
+        "，可加分或減分：";
     }
 
     const bar = document.getElementById("bulk-score-bar");
@@ -4319,10 +4323,6 @@
       const showMinus =
         showBulkScore && bulkPickModalPhase === "score";
       minusSection.hidden = !showMinus;
-      minusSection.classList.toggle(
-        "bulk-score-zone--needs-teacher",
-        showMinus && !teacherMode
-      );
     }
 
     document.body.classList.toggle("bulk-pick-active", bulkPickActive);
@@ -4541,7 +4541,6 @@
       cancelBulkPick();
       return;
     }
-    if (defaultDelta < 0 && !teacherMode && !ensureTeacherModeOn()) return;
     applyBulkQuickScore(defaultDelta);
   }
 
@@ -4550,7 +4549,6 @@
       cancelBulkPick();
       return;
     }
-    if (sign < 0 && !teacherMode && !ensureTeacherModeOn()) return;
     const inputId = sign > 0 ? "bulk-score-add-input" : "bulk-score-sub-input";
     const inputEl = document.getElementById(inputId);
     const raw = inputEl ? String(inputEl.value).trim() : "";
@@ -4591,7 +4589,6 @@
       btnBulkSubCustom.addEventListener("click", function (ev) {
         ev.preventDefault();
         ev.stopPropagation();
-        if (!teacherMode) return;
         applyBulkCustomScore(-1);
       });
     }
@@ -4609,7 +4606,7 @@
       bulkSubInput.addEventListener("keydown", function (ev) {
         if (ev.key === "Enter") {
           ev.preventDefault();
-          if (teacherMode) applyBulkCustomScore(-1);
+          applyBulkCustomScore(-1);
         }
       });
     }
@@ -5050,42 +5047,47 @@
 
     if (scoreBtns && group.memberIds.length > 0) {
       scoreBtns.innerHTML = "";
-      QUICK_ADD_VALUES.forEach(function (delta) {
+      function appendGroupScoreBtn(label, delta) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "group-members-modal__score-btn";
-        btn.textContent = "+" + delta;
+        if (delta < 0) btn.classList.add("group-members-modal__score-btn--minus");
+        btn.textContent = label;
         btn.addEventListener("click", function () {
           applyGroupQuickScore(groupId, delta);
           closeGroupMembersModal();
         });
         scoreBtns.appendChild(btn);
-      });
-      if (teacherMode) {
-        const customBtn = document.createElement("button");
-        customBtn.type = "button";
-        customBtn.className = "group-members-modal__score-btn";
-        customBtn.textContent = "自訂";
-        customBtn.addEventListener("click", function () {
-          showAppPrompt(
-            "可輸入正負整數，輸入 0 則取消。",
-            "1",
-            { title: "為「" + group.name + "」全組加分" }
-          ).then(function (raw) {
-            if (raw === null) return;
-            const d = parseInt(raw, 10);
-            if (!Number.isFinite(d) || d === 0) {
-              if (raw.trim() !== "0") {
-                showAppToast("請輸入非 0 的整數。", { variant: "warn" });
-              }
-              return;
-            }
-            applyGroupScoreDelta(group, d);
-            closeGroupMembersModal();
-          });
-        });
-        scoreBtns.appendChild(customBtn);
       }
+      QUICK_ADD_VALUES.forEach(function (delta) {
+        appendGroupScoreBtn("+" + delta, delta);
+      });
+      QUICK_ADD_VALUES.forEach(function (delta) {
+        appendGroupScoreBtn("-" + delta, -delta);
+      });
+      const customBtn = document.createElement("button");
+      customBtn.type = "button";
+      customBtn.className = "group-members-modal__score-btn";
+      customBtn.textContent = "自訂";
+      customBtn.addEventListener("click", function () {
+        showAppPrompt(
+          "可輸入正負整數，輸入 0 則取消。",
+          "1",
+          { title: "為「" + group.name + "」全組加減分" }
+        ).then(function (raw) {
+          if (raw === null) return;
+          const d = parseInt(raw, 10);
+          if (!Number.isFinite(d) || d === 0) {
+            if (raw.trim() !== "0") {
+              showAppToast("請輸入非 0 的整數。", { variant: "warn" });
+            }
+            return;
+          }
+          applyGroupScoreDelta(group, d);
+          closeGroupMembersModal();
+        });
+      });
+      scoreBtns.appendChild(customBtn);
     }
 
     renderGroupMembersAddList(groupId);
@@ -5911,6 +5913,10 @@
     updateTimerDisplay();
   }
 
+  function syncTimerModeBodyClass() {
+    document.body.classList.toggle("timer-mode-countdown", timerMode === "countdown");
+  }
+
   function setTimerMode(mode) {
     timerMode = mode;
     timerRunning = false;
@@ -5931,9 +5937,13 @@
 
     if (mode === "countdown") {
       countdownRemainingMs = getCountdownSetupMs();
+      timerIntervalCueSec = 0;
+      saveTimerSettings();
+      updateTimerSoundControlsUI();
     } else {
       stopwatchElapsedMs = 0;
     }
+    syncTimerModeBodyClass();
     syncTimerExpandedModeLabel();
     syncTimerMiniModeLabel();
     updateTimerDisplay();
@@ -7924,18 +7934,18 @@
     initScoreUndoRedoUi();
 
     document.addEventListener("keydown", function (ev) {
-      if (!teacherMode) return;
       const key = ev.key ? ev.key.toLowerCase() : "";
       if ((ev.ctrlKey || ev.metaKey) && key === "z" && !ev.shiftKey) {
         ev.preventDefault();
         undoLastScoreAction();
         return;
       }
-      if ((ev.ctrlKey || ev.metaKey) && key === "y") {
+      if (teacherMode && (ev.ctrlKey || ev.metaKey) && key === "y") {
         ev.preventDefault();
         redoLastScoreAction();
       }
     });
+    syncTimerModeBodyClass();
     document.addEventListener("click", function (ev) {
       if (activeScoreMenuSlotId !== null) {
         const current = document.querySelector(
