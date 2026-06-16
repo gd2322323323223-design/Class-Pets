@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "115";
-  const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
+  const APP_BUILD_VERSION = "116";
+  const APP_BUILD_UPDATED_AT = "2026-06-01 22:30";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
@@ -547,12 +547,27 @@
   let classCodeModalCallback = null;
   let connectGeneration = 0;
 
+  function readAppMeta(name) {
+    try {
+      const el = document.querySelector('meta[name="' + name + '"]');
+      if (el && el.content) return String(el.content).trim();
+    } catch (e) {}
+    return "";
+  }
+
+  function getAppBuildVersion() {
+    return readAppMeta("app-build-version") || APP_BUILD_VERSION;
+  }
+
+  function getAppBuildUpdatedAt() {
+    return readAppMeta("app-build-updated") || APP_BUILD_UPDATED_AT;
+  }
+
   function updateBuildVersionBadge() {
     const badge = document.querySelector(".build-version-badge");
     if (!badge) return;
-    badge.textContent = developerMode
-      ? "v" + APP_BUILD_VERSION + "·"
-      : "v" + APP_BUILD_VERSION;
+    const version = getAppBuildVersion();
+    badge.textContent = developerMode ? "v" + version + "·" : "v" + version;
     badge.classList.toggle("build-version-badge--dev", developerMode);
     renderBuildVersionTip();
   }
@@ -562,11 +577,12 @@
     const updatedEl = document.getElementById("build-version-updated-at");
     const devBlock = document.getElementById("build-version-dev-privileges-block");
     const list = document.getElementById("build-version-dev-tip-list");
+    const version = getAppBuildVersion();
     if (titleEl) {
-      titleEl.textContent = "版本 v" + APP_BUILD_VERSION;
+      titleEl.textContent = "版本 v" + version;
     }
     if (updatedEl) {
-      updatedEl.textContent = "最新更新：" + APP_BUILD_UPDATED_AT;
+      updatedEl.textContent = "最新更新：" + getAppBuildUpdatedAt();
     }
     if (devBlock) devBlock.hidden = !developerMode;
     if (list) {
@@ -3268,6 +3284,12 @@
     playScoreDingFallback();
   }
 
+  function playScoreDeltaSound(delta) {
+    if (!delta) return;
+    if (delta < 0) playLifeWarningSound();
+    else playScoreDing();
+  }
+
   /** 孵化：Q 彈雙音節卡通魔法感 */
   function playHatchSound() {
     const ctx = getWebAudioContext();
@@ -4532,7 +4554,7 @@
     });
     renderGroupButtons();
     updateBulkPickUI();
-    playScoreDing();
+    playScoreDeltaSound(delta);
     showBulkScoreToast(applied, delta);
   }
 
@@ -5438,7 +5460,7 @@
         else updateSlotPresentation(s);
       }
     });
-    playScoreDing();
+    playScoreDeltaSound(delta);
     showGroupScoreToast(group, delta);
   }
 
@@ -5618,7 +5640,7 @@
         else updateSlotPresentation(slot);
       }
     });
-    playScoreDing();
+    playScoreDeltaSound(delta);
 
     const first = getSlotById(luckyDrawWinnerIds[0]);
     if (first) {
@@ -7521,7 +7543,7 @@
     activeScoreMenuSlotId = null;
     if (slot.hatched) renderSlotElement(slot);
     else updateSlotPresentation(slot);
-    playScoreDing();
+    playScoreDeltaSound(delta);
     showScoreToast(slot, delta);
   }
 
@@ -7797,7 +7819,7 @@
         saveSlots();
         if (slot.hatched) renderSlotElement(slot);
         else updateSlotPresentation(slot);
-        playScoreDing();
+        playScoreDeltaSound(delta);
         showScoreToast(slot, delta);
       });
       return;
