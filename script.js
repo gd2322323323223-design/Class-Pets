@@ -4,7 +4,7 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "114";
+  const APP_BUILD_VERSION = "115";
   const APP_BUILD_UPDATED_AT = "2026-06-01 16:20";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const DEV_MODE_PASSWORD = "0315";
@@ -7277,19 +7277,43 @@
   }
 
   function ensureQuickScoreMenu(quickMenu, slotId) {
-    if (!quickMenu || quickMenu.dataset.built === "1") return;
-    quickMenu.dataset.built = "1";
+    if (!quickMenu || quickMenu.dataset.built === "2") return;
+    quickMenu.dataset.built = "2";
+    quickMenu.innerHTML = "";
+    quickMenu.className = "score-quick-menu";
+
+    const minusRow = document.createElement("div");
+    minusRow.className = "score-quick-menu__row score-quick-menu__row--minus";
+    minusRow.setAttribute("aria-label", "扣分");
+
+    const plusRow = document.createElement("div");
+    plusRow.className = "score-quick-menu__row score-quick-menu__row--plus";
+    plusRow.setAttribute("aria-label", "加分");
+
     QUICK_ADD_VALUES.forEach(function (delta) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "score-quick-btn";
-      btn.textContent = "+" + delta;
-      btn.addEventListener("click", function (ev) {
+      const minusBtn = document.createElement("button");
+      minusBtn.type = "button";
+      minusBtn.className = "score-quick-btn score-quick-btn--minus";
+      minusBtn.textContent = "-" + delta;
+      minusBtn.addEventListener("click", function (ev) {
+        ev.stopPropagation();
+        applyQuickScore(slotId, -delta);
+      });
+      minusRow.appendChild(minusBtn);
+
+      const plusBtn = document.createElement("button");
+      plusBtn.type = "button";
+      plusBtn.className = "score-quick-btn score-quick-btn--plus";
+      plusBtn.textContent = "+" + delta;
+      plusBtn.addEventListener("click", function (ev) {
         ev.stopPropagation();
         applyQuickScore(slotId, delta);
       });
-      quickMenu.appendChild(btn);
+      plusRow.appendChild(plusBtn);
     });
+
+    quickMenu.appendChild(minusRow);
+    quickMenu.appendChild(plusRow);
   }
 
   function updateSlotQuickMenu(el, slot) {
