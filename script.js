@@ -4,9 +4,11 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "116";
-  const APP_BUILD_UPDATED_AT = "2026-06-01 22:30";
+  const APP_BUILD_VERSION = "117";
+  const APP_BUILD_UPDATED_AT = "2026-06-01 23:45";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
+  const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
+  const FAVORITE_LINKS_MAX = 10;
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
   const DEV_MODE_BADGE_CLICK_MS = 900;
@@ -1415,6 +1417,7 @@
         hideClassCodeModal();
         setCloudSyncStatus("雲端：已連線（" + code + "）", false);
         updateDashHeaderTitle();
+        renderFavoriteLinksUI();
         if (callback) callback(true);
       })
       .catch(function (err) {
@@ -1824,9 +1827,14 @@
       ["btn-mission-panel-toggle", "mission-panel-body", ".tools-panel--mission"],
       ["btn-lucky-panel-toggle", "lucky-panel-body", ".tools-panel--lucky"],
       ["btn-timer-panel-toggle", "timer-panel-body", ".tools-panel--timer"],
-      ["btn-backup-panel-toggle", "backup-panel-body", ".tools-panel--backup"],
+      [
+        "btn-favorite-links-panel-toggle",
+        "favorite-links-panel-body",
+        ".tools-panel--favorite-links",
+      ],
       ["btn-class-setup-panel-toggle", "class-setup-panel-body", ".tools-panel--class-setup"],
       ["btn-class-code-panel-toggle", "class-code-panel-body", ".tools-panel--class-code"],
+      ["btn-backup-panel-toggle", "backup-panel-body", ".tools-panel--backup"],
     ];
     panels.forEach(function (entry) {
       initCollapsiblePanel(
@@ -6925,13 +6933,206 @@
     if (restoreBtn) restoreBtn.addEventListener("click", onRestoreClassSaveCodeClick);
   }
 
+  function getFavoriteLinksClassKey() {
+    const code = sanitizeClassCode(currentClassCode);
+    return code || "_default";
+  }
+
+  function loadFavoriteLinksPack() {
+    try {
+      const raw = localStorage.getItem(FAVORITE_LINKS_STORAGE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveFavoriteLinksPack(pack) {
+    try {
+      localStorage.setItem(FAVORITE_LINKS_STORAGE_KEY, JSON.stringify(pack));
+    } catch (e) {}
+  }
+
+  function loadFavoriteLinksForClass() {
+    const pack = loadFavoriteLinksPack();
+    const key = getFavoriteLinksClassKey();
+    const list = pack[key];
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter(function (item) {
+        return item && typeof item.url === "string" && item.url.trim();
+      })
+      .slice(0, FAVORITE_LINKS_MAX);
+  }
+
+  function saveFavoriteLinksForClass(list) {
+    const pack = loadFavoriteLinksPack();
+    pack[getFavoriteLinksClassKey()] = list.slice(0, FAVORITE_LINKS_MAX);
+    saveFavoriteLinksPack(pack);
+  }
+
+  function normalizeFavoriteLinkUrl(raw) {
+    const trimmed = String(raw || "").trim();
+    if (!trimmed) return "";
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    if (/^\/\//.test(trimmed)) return "https:" + trimmed;
+    return "https://" + trimmed;
+  }
+
+  function isSafeFavoriteUrl(url) {
+    try {
+      const parsed = new URL(url);
+      return parsed.protocol === "http:" || parsed.protocol === "https:";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function favoriteLinkDisplayLabel(item) {
+    if (item.label && String(item.label).trim()) {
+      return String(item.label).trim();
+    }
+    try {
+      return new URL(item.url).hostname.replace(/^www\./i, "");
+    } catch (e) {
+      return item.url;
+    }
+  }
+
+  function openFavoriteLink(url) {
+    if (!isSafeFavoriteUrl(url)) {
+      showAppToast("無法開啟此連結。", { variant: "warn" });
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function renderFavoriteLinksUI() {
+    const listEl = document.getElementById("favorite-links-list");
+    const emptyEl = document.getElementById("favorite-links-empty");
+    const editEl = document.getElementById("favorite-links-edit");
+    if (!listEl) return;
+
+    const links = loadFavoriteLinksForClass();
+    listEl.innerHTML = "";
+
+    links.forEach(function (item, index) {
+      const li = document.createElement("li");
+      li.className = "favorite-links-item";
+
+      const openBtn = document.createElement("button");
+      openBtn.type = "button";
+      openBtn.className = "favorite-links-item__open";
+      openBtn.innerHTML =
+        '<span class="favorite-links-item__label">' +
+        favoriteLinkDisplayLabel(item) +
+        '</span><span class="favorite-links-item__url">' +
+        item.url +
+        "</span>";
+      openBtn.addEventListener("click", function () {
+        openFavoriteLink(item.url);
+      });
+
+      li.appendChild(openBtn);
+
+      if (teacherMode) {
+        const removeBtn = document.createElement("button");
+        removeBtn.type = "button";
+        removeBtn.className = "favorite-links-item__remove";
+        removeBtn.setAttribute("aria-label", "刪除此連結");
+        removeBtn.textContent = "✕";
+        removeBtn.addEventListener("click", function (ev) {
+          ev.stopPropagation();
+          const next = loadFavoriteLinksForClass().filter(function (_, i) {
+            return i !== index;
+          });
+          saveFavoriteLinksForClass(next);
+          renderFavoriteLinksUI();
+          showAppToast("已刪除常用網頁。", { variant: "success" });
+        });
+        li.appendChild(removeBtn);
+      }
+
+      listEl.appendChild(li);
+    });
+
+    if (emptyEl) emptyEl.hidden = links.length > 0;
+    if (editEl) editEl.hidden = !teacherMode;
+  }
+
+  function onFavoriteLinkSaveClick() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+
+    const labelInput = document.getElementById("favorite-link-label");
+    const urlInput = document.getElementById("favorite-link-url");
+    const rawUrl = urlInput ? urlInput.value : "";
+    const url = normalizeFavoriteLinkUrl(rawUrl);
+
+    if (!url) {
+      showAppToast("請貼上網頁連結。", { variant: "warn" });
+      return;
+    }
+    if (!isSafeFavoriteUrl(url)) {
+      showAppToast("僅支援 http:// 或 https:// 開頭的連結。", { variant: "warn" });
+      return;
+    }
+
+    const links = loadFavoriteLinksForClass();
+    if (links.length >= FAVORITE_LINKS_MAX) {
+      showAppToast("最多只能儲存 " + FAVORITE_LINKS_MAX + " 條連結。", {
+        variant: "warn",
+      });
+      return;
+    }
+
+    const label = labelInput ? String(labelInput.value || "").trim() : "";
+    links.push({
+      id: Date.now(),
+      label: label,
+      url: url,
+    });
+    saveFavoriteLinksForClass(links);
+
+    if (labelInput) labelInput.value = "";
+    if (urlInput) urlInput.value = "";
+
+    renderFavoriteLinksUI();
+    showAppToast("已儲存常用網頁。", { variant: "success" });
+  }
+
+  function initFavoriteLinksModule() {
+    const saveBtn = document.getElementById("btn-favorite-link-save");
+    const urlInput = document.getElementById("favorite-link-url");
+
+    if (saveBtn) saveBtn.addEventListener("click", onFavoriteLinkSaveClick);
+    if (urlInput) {
+      urlInput.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          onFavoriteLinkSaveClick();
+        }
+      });
+    }
+
+    renderFavoriteLinksUI();
+  }
+
+  function syncFavoriteLinksEditVisibility() {
+    renderFavoriteLinksUI();
+  }
+
   const TOOLS_PANEL_NAMED_THEMES = [
     "mission",
     "lucky",
     "timer",
-    "backup",
+    "favorite-links",
     "class-setup",
     "class-code",
+    "backup",
   ];
   const TOOLS_PANEL_AUTO_ACCENTS = [
     "tools-panel--accent-indigo",
@@ -7026,6 +7227,7 @@
     setTimerMode("stopwatch");
     initDailyMissionModule();
     initDataBackupModule();
+    initFavoriteLinksModule();
     initClassSetupPanel();
   }
 
@@ -7648,6 +7850,7 @@
     document.body.classList.toggle("teacher-mode-active", teacherMode);
     syncToolsSidebarEditHint();
     syncTeacherToolsPanelsVisibility();
+    syncFavoriteLinksEditVisibility();
     syncDeveloperToolsVisibility();
     renderBuildVersionTip();
     if (btnTeacherMode) {

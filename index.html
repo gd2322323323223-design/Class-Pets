@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="app-build-version" content="116" />
-  <meta name="app-build-updated" content="2026-06-01 22:30" />
+  <meta name="app-build-version" content="117" />
+  <meta name="app-build-updated" content="2026-06-01 23:45" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=116" />
+  <link rel="stylesheet" href="style.css?v=117" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -47,7 +47,7 @@
   </div>
 
   <div class="build-version-badge-wrap">
-    <div class="build-version-badge" aria-label="版本號">v116</div>
+    <div class="build-version-badge" aria-label="版本號">v117</div>
     <div
       id="build-version-dev-tip"
       class="build-version-dev-tip"
@@ -271,53 +271,58 @@
     </section>
 
     <section
-      class="tools-panel tools-panel--backup tools-panel--collapsible js-teacher-tools-panel"
-      aria-labelledby="tools-backup-title"
-      hidden
+      class="tools-panel tools-panel--favorite-links tools-panel--collapsible"
+      aria-labelledby="tools-favorite-links-title"
     >
       <button
         type="button"
-        id="btn-backup-panel-toggle"
+        id="btn-favorite-links-panel-toggle"
         class="tools-panel__toggle"
         aria-expanded="false"
-        aria-controls="backup-panel-body"
+        aria-controls="favorite-links-panel-body"
       >
         <span class="tools-panel__heading">
-          <span class="tools-panel__icon" aria-hidden="true">📋</span>
+          <span class="tools-panel__icon" aria-hidden="true">🔗</span>
           <span class="tools-panel__heading-text">
-            <span id="tools-backup-title" class="tools-panel__title">手動備份資料</span>
-            <span class="tools-panel__subtitle">資料管理</span>
+            <span id="tools-favorite-links-title" class="tools-panel__title">常用網頁</span>
+            <span class="tools-panel__subtitle">快捷連結</span>
           </span>
         </span>
         <span class="tools-panel__chevron" aria-hidden="true">▼</span>
       </button>
-      <div id="backup-panel-body" class="tools-panel__collapsible-body" hidden>
-      <div class="tools-panel__actions">
-        <button
-          type="button"
-          id="btn-copy-class-savecode"
-          class="tools-btn tools-btn--primary"
-        >
-          📋 複製全班存檔碼
-        </button>
-        <label class="tools-field" for="class-savecode-input">
-          <span>輸入存檔碼還原</span>
-          <textarea
-            id="class-savecode-input"
-            class="tools-textarea"
-            rows="3"
-            placeholder="貼上先前複製的存檔碼…"
-            spellcheck="false"
-          ></textarea>
-        </label>
-        <button
-          type="button"
-          id="btn-restore-class-savecode"
-          class="tools-btn tools-btn--ghost"
-        >
-          ♻️ 還原全班資料
-        </button>
-      </div>
+      <div id="favorite-links-panel-body" class="tools-panel__collapsible-body" hidden>
+        <p class="tools-panel__desc">
+          每個班級獨立儲存，最多 10 條（僅本機，不上傳雲端）。
+        </p>
+        <ul id="favorite-links-list" class="favorite-links-list" aria-label="已儲存的常用網頁"></ul>
+        <p id="favorite-links-empty" class="favorite-links-empty" hidden>尚無常用網頁</p>
+        <div id="favorite-links-edit" class="favorite-links-edit" hidden>
+          <label class="tools-field" for="favorite-link-label">
+            <span>名稱（選填）</span>
+            <input
+              id="favorite-link-label"
+              class="tools-input"
+              type="text"
+              maxlength="40"
+              placeholder="例如：班級 Google 雲端"
+              autocomplete="off"
+            />
+          </label>
+          <label class="tools-field" for="favorite-link-url">
+            <span>網頁連結</span>
+            <input
+              id="favorite-link-url"
+              class="tools-input"
+              type="url"
+              inputmode="url"
+              placeholder="https://..."
+              autocomplete="off"
+            />
+          </label>
+          <button type="button" id="btn-favorite-link-save" class="tools-btn tools-btn--primary">
+            儲存連結
+          </button>
+        </div>
       </div>
     </section>
 
@@ -420,6 +425,57 @@
           </button>
         </div>
         <p id="class-code-sync-status" class="class-code-sync-status">雲端：尚未連線</p>
+      </div>
+    </section>
+
+    <section
+      class="tools-panel tools-panel--backup tools-panel--collapsible js-teacher-tools-panel"
+      aria-labelledby="tools-backup-title"
+      hidden
+    >
+      <button
+        type="button"
+        id="btn-backup-panel-toggle"
+        class="tools-panel__toggle"
+        aria-expanded="false"
+        aria-controls="backup-panel-body"
+      >
+        <span class="tools-panel__heading">
+          <span class="tools-panel__icon" aria-hidden="true">📋</span>
+          <span class="tools-panel__heading-text">
+            <span id="tools-backup-title" class="tools-panel__title">手動備份資料</span>
+            <span class="tools-panel__subtitle">資料管理</span>
+          </span>
+        </span>
+        <span class="tools-panel__chevron" aria-hidden="true">▼</span>
+      </button>
+      <div id="backup-panel-body" class="tools-panel__collapsible-body" hidden>
+      <div class="tools-panel__actions">
+        <button
+          type="button"
+          id="btn-copy-class-savecode"
+          class="tools-btn tools-btn--primary"
+        >
+          📋 複製全班存檔碼
+        </button>
+        <label class="tools-field" for="class-savecode-input">
+          <span>輸入存檔碼還原</span>
+          <textarea
+            id="class-savecode-input"
+            class="tools-textarea"
+            rows="3"
+            placeholder="貼上先前複製的存檔碼…"
+            spellcheck="false"
+          ></textarea>
+        </label>
+        <button
+          type="button"
+          id="btn-restore-class-savecode"
+          class="tools-btn tools-btn--ghost"
+        >
+          ♻️ 還原全班資料
+        </button>
+      </div>
       </div>
     </section>
     <p id="tools-sidebar-edit-hint" class="tools-sidebar__edit-hint">進入編輯模式，開啟更多功能。</p>
@@ -1189,6 +1245,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=116"></script>
+  <script src="script.js?v=117"></script>
 </body>
 </html>

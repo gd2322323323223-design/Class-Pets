@@ -176,6 +176,7 @@ body.class-code-open {
 .tools-panel--mission.tools-panel--collapsible,
 .tools-panel--lucky.tools-panel--collapsible,
 .tools-panel--timer.tools-panel--collapsible,
+.tools-panel--favorite-links.tools-panel--collapsible,
 .tools-panel--backup.tools-panel--collapsible,
 .tools-panel--class-setup.tools-panel--collapsible,
 .tools-panel--class-code.tools-panel--collapsible {
@@ -215,6 +216,7 @@ body.class-code-open {
 .tools-panel--mission .tools-panel__subtitle,
 .tools-panel--lucky .tools-panel__subtitle,
 .tools-panel--timer .tools-panel__subtitle,
+.tools-panel--favorite-links .tools-panel__subtitle,
 .tools-panel--backup .tools-panel__subtitle,
 .tools-panel--class-setup .tools-panel__subtitle,
 .tools-panel--class-code .tools-panel__subtitle,
@@ -225,6 +227,7 @@ body.class-code-open {
 .tools-panel--mission .tools-panel__toggle,
 .tools-panel--lucky .tools-panel__toggle,
 .tools-panel--timer .tools-panel__toggle,
+.tools-panel--favorite-links .tools-panel__toggle,
 .tools-panel--backup .tools-panel__toggle,
 .tools-panel--class-setup .tools-panel__toggle,
 .tools-panel--class-code .tools-panel__toggle {
@@ -234,6 +237,7 @@ body.class-code-open {
 .tools-panel--mission .tools-panel__toggle .tools-panel__title,
 .tools-panel--lucky .tools-panel__toggle .tools-panel__title,
 .tools-panel--timer .tools-panel__toggle .tools-panel__title,
+.tools-panel--favorite-links .tools-panel__toggle .tools-panel__title,
 .tools-panel--backup .tools-panel__toggle .tools-panel__title,
 .tools-panel--class-setup .tools-panel__toggle .tools-panel__title,
 .tools-panel--class-code .tools-panel__toggle .tools-panel__title,
@@ -261,6 +265,7 @@ body.class-code-open {
 .tools-panel--mission .tools-panel__chevron,
 .tools-panel--lucky .tools-panel__chevron,
 .tools-panel--timer .tools-panel__chevron,
+.tools-panel--favorite-links .tools-panel__chevron,
 .tools-panel--backup .tools-panel__chevron,
 .tools-panel--class-setup .tools-panel__chevron,
 .tools-panel--class-code .tools-panel__chevron,
@@ -630,6 +635,127 @@ body.tools-sidebar-open .tools-tab {
 .tools-panel--timer .tools-panel__title {
   color: #fef08a;
   text-shadow: 0 2px 6px rgba(23, 37, 84, 0.55);
+}
+
+.tools-panel--favorite-links {
+  background: linear-gradient(145deg, #0ea5e9 0%, #0284c7 52%, #0369a1 100%);
+  border-color: rgba(186, 230, 253, 0.55);
+  box-shadow:
+    0 6px 20px rgba(2, 132, 199, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.tools-panel--favorite-links .tools-panel__title,
+.tools-panel--favorite-links .tools-panel__toggle {
+  color: #e0f2fe;
+}
+
+.tools-panel--favorite-links .tools-panel__toggle .tools-panel__title {
+  color: #e0f2fe;
+  -webkit-text-fill-color: #e0f2fe;
+  text-shadow: 0 2px 6px rgba(3, 105, 161, 0.45);
+}
+
+.tools-panel--favorite-links .tools-panel__desc,
+.tools-panel--favorite-links .favorite-links-empty {
+  color: rgba(240, 249, 255, 0.94);
+  text-shadow: 0 1px 3px rgba(3, 105, 161, 0.35);
+}
+
+.tools-panel--favorite-links .tools-field > span {
+  color: #f0f9ff;
+  font-weight: 700;
+}
+
+.favorite-links-list {
+  list-style: none;
+  margin: 0 0 0.65rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.favorite-links-item {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+}
+
+.favorite-links-item__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(186, 230, 253, 0.45);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0c4a6e;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.favorite-links-item__open:hover {
+  filter: brightness(1.03);
+  border-color: rgba(14, 165, 233, 0.65);
+}
+
+.favorite-links-item__label {
+  font-size: 0.88rem;
+  font-weight: 900;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.favorite-links-item__url {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.72;
+  line-height: 1.25;
+  word-break: break-all;
+}
+
+.favorite-links-item__remove {
+  flex: 0 0 auto;
+  width: 2rem;
+  border-radius: 10px;
+  border: 1px solid rgba(185, 28, 28, 0.35);
+  background: rgba(254, 226, 226, 0.95);
+  color: #991b1b;
+  font-size: 0.82rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.favorite-links-item__remove:hover {
+  filter: brightness(1.04);
+}
+
+.favorite-links-empty {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.favorite-links-empty[hidden] {
+  display: none;
+}
+
+.favorite-links-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding-top: 0.15rem;
+  border-top: 1px dashed rgba(186, 230, 253, 0.45);
+}
+
+.favorite-links-edit[hidden] {
+  display: none !important;
 }
 
 .tools-panel--backup {
