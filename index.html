@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="app-build-version" content="118" />
-  <meta name="app-build-updated" content="2026-06-24T08:54:00+08:00" />
+  <meta name="app-build-version" content="119" />
+  <meta name="app-build-updated" content="2026-06-24T15:04:33+08:00" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=118" />
+  <link rel="stylesheet" href="style.css?v=119" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -107,6 +107,17 @@
   >
     <span class="teacher-mode-btn__icon" aria-hidden="true">✏️</span>
     <span id="teacher-mode-btn-label" class="teacher-mode-btn__label">編輯模式-關</span>
+  </button>
+
+  <button
+    type="button"
+    id="btn-phone-mode"
+    class="phone-mode-btn"
+    title="點擊開啟電話模式（僅顯示姓名與加減分）"
+    aria-label="電話模式已關閉，點擊開啟"
+  >
+    <span class="phone-mode-btn__icon" aria-hidden="true">📱</span>
+    <span id="phone-mode-btn-label" class="phone-mode-btn__label">電話模式-關</span>
   </button>
 
   <button
@@ -292,7 +303,7 @@
       </button>
       <div id="favorite-links-panel-body" class="tools-panel__collapsible-body" hidden>
         <p class="tools-panel__desc">
-          每個班級獨立儲存，最多 10 條（僅本機，不上傳雲端）。
+          每個班級獨立儲存，最多 10 條；儲存後自動同步至雲端，同班別裝置可共用。
         </p>
         <ul id="favorite-links-list" class="favorite-links-list" aria-label="已儲存的常用網頁"></ul>
         <p id="favorite-links-empty" class="favorite-links-empty" hidden>尚無常用網頁</p>
@@ -1245,6 +1256,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=118"></script>
+  <script src="script.js?v=119"></script>
 </body>
 </html>

@@ -4,10 +4,11 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "118";
-  const APP_BUILD_UPDATED_AT = "2026-06-24T08:54:00+08:00";
+  const APP_BUILD_VERSION = "119";
+  const APP_BUILD_UPDATED_AT = "2026-06-24T15:04:33+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
+  const PHONE_MODE_STORAGE_KEY = "classroom-phone-mode-v1";
   const FAVORITE_LINKS_MAX = 10;
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
@@ -144,6 +145,7 @@
 
   const gridEl = document.getElementById("dashboard-grid");
   const btnTeacherMode = document.getElementById("btn-teacher-mode");
+  const btnPhoneMode = document.getElementById("btn-phone-mode");
 
   function canLoadGlbAssets() {
     const protocol = window.location.protocol;
@@ -161,6 +163,7 @@
     return Number.isInteger(n) && n >= MIN_SLOT_COUNT && n <= MAX_SLOT_COUNT;
   }
   let teacherMode = false;
+  let phoneMode = false;
   let developerMode = false;
   let versionBadgeClickCount = 0;
   let versionBadgeClickTimerId = null;
@@ -998,6 +1001,7 @@
       classDisplay: {
         gardenName: DEFAULT_GARDEN_NAME,
       },
+      favoriteLinks: [],
       updatedAt: Date.now(),
     };
   }
@@ -1038,6 +1042,7 @@
       classDisplay: {
         gardenName: DEFAULT_GARDEN_NAME,
       },
+      favoriteLinks: [],
       updatedAt: Date.now(),
     };
   }
@@ -1122,6 +1127,13 @@
         }
       }
     } catch (e) {}
+    try {
+      const links = loadFavoriteLinksForClass();
+      if (links.length) {
+        payload.favoriteLinks = links;
+        hasAny = true;
+      }
+    } catch (e) {}
     return hasAny ? payload : null;
   }
 
@@ -1146,6 +1158,7 @@
       classDisplay: {
         gardenName: gardenDisplayName,
       },
+      favoriteLinks: loadFavoriteLinksForClass(),
       updatedAt: Date.now(),
     };
   }
@@ -1207,6 +1220,12 @@
     syncGardenNameInput();
     syncStudentCountUI();
     updateLuckyCountLimits();
+
+    if (Array.isArray(data.favoriteLinks)) {
+      applyFavoriteLinksFromCloud(data.favoriteLinks);
+    } else if (appBootstrapped) {
+      renderFavoriteLinksUI();
+    }
 
     classProgressBootstrapped = false;
 
@@ -1452,6 +1471,12 @@
         setCloudSyncStatus("雲端：已連線（" + code + "）", false);
         updateDashHeaderTitle();
         renderFavoriteLinksUI();
+        if (
+          !Array.isArray(data.favoriteLinks) &&
+          loadFavoriteLinksForClass().length > 0
+        ) {
+          scheduleCloudSync();
+        }
         if (callback) callback(true);
       })
       .catch(function (err) {
@@ -2323,6 +2348,16 @@
 
   function renderSlotScoreFx(el, slot) {
     if (!el || !slot) return;
+    if (phoneMode) {
+      el.classList.remove(
+        "slot--fx-glow",
+        "slot--fx-border",
+        "slot--fx-ripple",
+        "slot--fx-stars",
+        "slot--fx-crown"
+      );
+      return;
+    }
     const score = slot.hatched ? Math.max(0, slot.score) : 0;
     const fxLevel = getSlotScoreFxLevel(score);
 
@@ -6991,22 +7026,41 @@
     } catch (e) {}
   }
 
+  function normalizeFavoriteLinksList(raw) {
+    if (!Array.isArray(raw)) return [];
+    const out = [];
+    raw.forEach(function (item) {
+      if (!item || typeof item.url !== "string") return;
+      const url = String(item.url).trim();
+      if (!url) return;
+      out.push({
+        id: item.id || Date.now() + out.length,
+        label: item.label ? String(item.label).trim() : "",
+        url: url,
+      });
+    });
+    return out.slice(0, FAVORITE_LINKS_MAX);
+  }
+
   function loadFavoriteLinksForClass() {
     const pack = loadFavoriteLinksPack();
     const key = getFavoriteLinksClassKey();
-    const list = pack[key];
-    if (!Array.isArray(list)) return [];
-    return list
-      .filter(function (item) {
-        return item && typeof item.url === "string" && item.url.trim();
-      })
-      .slice(0, FAVORITE_LINKS_MAX);
+    return normalizeFavoriteLinksList(pack[key]);
   }
 
-  function saveFavoriteLinksForClass(list) {
+  function saveFavoriteLinksForClass(list, options) {
+    options = options || {};
     const pack = loadFavoriteLinksPack();
-    pack[getFavoriteLinksClassKey()] = list.slice(0, FAVORITE_LINKS_MAX);
+    pack[getFavoriteLinksClassKey()] = normalizeFavoriteLinksList(list);
     saveFavoriteLinksPack(pack);
+    if (!options.skipCloudSync) scheduleCloudSync();
+  }
+
+  function applyFavoriteLinksFromCloud(raw) {
+    saveFavoriteLinksForClass(normalizeFavoriteLinksList(raw), {
+      skipCloudSync: true,
+    });
+    if (appBootstrapped) renderFavoriteLinksUI();
   }
 
   function normalizeFavoriteLinkUrl(raw) {
@@ -7157,6 +7211,68 @@
 
   function syncFavoriteLinksEditVisibility() {
     renderFavoriteLinksUI();
+  }
+
+  function loadPhoneModePreference() {
+    try {
+      return localStorage.getItem(PHONE_MODE_STORAGE_KEY) === "1";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function savePhoneModePreference() {
+    try {
+      localStorage.setItem(PHONE_MODE_STORAGE_KEY, phoneMode ? "1" : "0");
+    } catch (e) {}
+  }
+
+  function invalidateSlotStages() {
+    document.querySelectorAll(".slot__stage").forEach(function (stage) {
+      delete stage.dataset.stageKey;
+    });
+  }
+
+  function syncPhoneModeUI() {
+    document.body.classList.toggle("phone-mode-active", phoneMode);
+    if (btnPhoneMode) {
+      btnPhoneMode.classList.toggle("is-active", phoneMode);
+      const labelEl = document.getElementById("phone-mode-btn-label");
+      if (labelEl) {
+        labelEl.textContent = phoneMode ? "電話模式-開" : "電話模式-關";
+      }
+      btnPhoneMode.title = phoneMode
+        ? "點擊關閉電話模式（顯示 3D 模型）"
+        : "點擊開啟電話模式（僅顯示姓名與加減分）";
+      btnPhoneMode.setAttribute(
+        "aria-label",
+        phoneMode
+          ? "電話模式已開啟，點擊關閉"
+          : "電話模式已關閉，點擊開啟"
+      );
+    }
+  }
+
+  function setPhoneMode(enabled) {
+    const next = !!enabled;
+    if (phoneMode === next) return;
+    phoneMode = next;
+    savePhoneModePreference();
+    syncPhoneModeUI();
+    invalidateSlotStages();
+    if (appBootstrapped) renderAll();
+  }
+
+  function togglePhoneMode() {
+    setPhoneMode(!phoneMode);
+  }
+
+  function initPhoneModeModule() {
+    phoneMode = loadPhoneModePreference();
+    syncPhoneModeUI();
+    if (btnPhoneMode) {
+      btnPhoneMode.addEventListener("click", togglePhoneMode);
+    }
   }
 
   const TOOLS_PANEL_NAMED_THEMES = [
@@ -7508,6 +7624,7 @@
   }
 
   function getSlotStageKey(slot) {
+    if (phoneMode) return "phone";
     if (slot.hatched) {
       return "h:" + getSlotDisplayAnimal(slot);
     }
@@ -7523,6 +7640,10 @@
     }
     stage.dataset.stageKey = key;
     stage.innerHTML = "";
+    if (phoneMode) {
+      clearSlotStageInteractivity(stage);
+      return;
+    }
     if (slot.hatched) {
       appendHatchedBeast(stage, slot, "slot__viewer");
     } else {
@@ -8120,6 +8241,10 @@
     if (teacherMode) {
       closeQuickScoreMenu();
       onSlotTeacherAction(slotId);
+      return;
+    }
+    if (phoneMode) {
+      onScoreClick(slotId);
     }
   }
 
@@ -8208,6 +8333,7 @@
     preloadFreesoundEffects();
     initToolsSidebar();
     initAnimalPickModal();
+    initPhoneModeModule();
     updateDashHeaderTitle();
 
     if (btnTeacherMode) {

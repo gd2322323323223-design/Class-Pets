@@ -1974,6 +1974,70 @@ body.lucky-draw-running .slot {
     inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
+.phone-mode-btn {
+  position: fixed;
+  top: 3.15rem;
+  left: 0.85rem;
+  z-index: 200;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 2rem;
+  padding: 0.32rem 0.72rem 0.32rem 0.55rem;
+  border: 1.5px solid rgba(96, 165, 250, 0.9);
+  border-radius: 999px;
+  font-family: inherit;
+  line-height: 1.15;
+  color: #1e3a8a;
+  background: linear-gradient(145deg, #bfdbfe 0%, #93c5fd 55%, #60a5fa 100%);
+  box-shadow:
+    0 4px 0 rgba(30, 64, 175, 0.4),
+    0 8px 22px rgba(59, 130, 246, 0.35);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 0.15s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.phone-mode-btn__icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.phone-mode-btn__label {
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  color: #1e3a8a;
+}
+
+.phone-mode-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.phone-mode-btn.is-active {
+  color: #fff7ed;
+  border-color: rgba(253, 186, 116, 0.95);
+  background: linear-gradient(145deg, #fb923c 0%, #f97316 55%, #ea580c 100%);
+  box-shadow:
+    0 4px 0 rgba(154, 52, 18, 0.45),
+    0 8px 22px rgba(249, 115, 22, 0.4);
+}
+
+.phone-mode-btn.is-active .phone-mode-btn__label {
+  color: #fff7ed;
+}
+
+.phone-mode-btn.is-active:hover {
+  filter: brightness(1.05);
+}
+
 .build-version-badge-wrap {
   position: fixed;
   top: 0.65rem;
@@ -5221,8 +5285,50 @@ body.teacher-mode-active
 }
 
 .file-protocol-banner ~ .build-version-badge-wrap,
-.file-protocol-banner ~ .teacher-mode-btn {
+.file-protocol-banner ~ .teacher-mode-btn,
+.file-protocol-banner ~ .phone-mode-btn {
   margin-top: 2.5rem;
+}
+
+body.phone-mode-active .slot {
+  min-height: auto;
+  contain-intrinsic-size: 72px;
+}
+
+body.phone-mode-active .slot__stage,
+body.phone-mode-active .slot__lives,
+body.phone-mode-active .slot__history-btn,
+body.phone-mode-active .slot__footer-part--emoji {
+  display: none !important;
+}
+
+body.phone-mode-active .slot__footer {
+  border-top: none;
+  padding: 0.55rem 0.5rem;
+}
+
+body.phone-mode-active .slot__footer-part--name {
+  width: 58%;
+  font-size: clamp(1.05rem, 4.2vw, 1.35rem);
+}
+
+body.phone-mode-active .slot__footer-part--score {
+  width: 38%;
+}
+
+body.phone-mode-active .dashboard-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+body.phone-mode-active .score-quick-menu {
+  bottom: 3.35rem;
+}
+
+@media (min-width: 520px) {
+  body.phone-mode-active .dashboard-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 .slot__footer {
