@@ -686,10 +686,9 @@ body.tools-sidebar-open .tools-tab {
   flex: 1;
   min-width: 0;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.12rem;
-  padding: 0.45rem 0.55rem;
+  flex-direction: row;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
   border-radius: 10px;
   border: 1px solid rgba(186, 230, 253, 0.45);
   background: rgba(255, 255, 255, 0.92);
@@ -705,18 +704,15 @@ body.tools-sidebar-open .tools-tab {
 }
 
 .favorite-links-item__label {
-  font-size: 0.88rem;
+  font-size: clamp(0.95rem, 2.8vw, 1.08rem);
   font-weight: 900;
-  line-height: 1.25;
+  font-family: "Microsoft JhengHei", "PingFang TC", "Noto Sans TC", "Segoe UI", sans-serif;
+  line-height: 1.35;
   word-break: break-word;
-}
-
-.favorite-links-item__url {
-  font-size: 0.68rem;
-  font-weight: 600;
-  opacity: 0.72;
-  line-height: 1.25;
-  word-break: break-all;
+  color: #0c4a6e;
+  -webkit-text-fill-color: #0c4a6e;
+  letter-spacing: 0.01em;
+  text-shadow: 0.35px 0 0 currentColor, -0.35px 0 0 currentColor;
 }
 
 .favorite-links-item__remove {
@@ -808,7 +804,6 @@ body.tools-sidebar-open .tools-tab {
 }
 
 .tools-panel--class-code {
-  margin-bottom: 0;
   background: linear-gradient(145deg, #3b82f6 0%, #1d4ed8 52%, #1e3a8a 100%);
   border-color: rgba(191, 219, 254, 0.55);
   box-shadow:

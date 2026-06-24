@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "117";
-  const APP_BUILD_UPDATED_AT = "2026-06-01 23:45";
+  const APP_BUILD_VERSION = "118";
+  const APP_BUILD_UPDATED_AT = "2026-06-24T08:54:00+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const FAVORITE_LINKS_MAX = 10;
@@ -565,6 +565,39 @@
     return readAppMeta("app-build-updated") || APP_BUILD_UPDATED_AT;
   }
 
+  function parseAppBuildUpdatedAt(raw) {
+    const value = String(raw || "").trim();
+    if (!value) return null;
+    let parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) return parsed;
+    const normalized = value.replace(" ", "T");
+    parsed = new Date(
+      /([zZ]|[+-]\d{2}:\d{2})$/.test(normalized)
+        ? normalized
+        : normalized + "+08:00"
+    );
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  }
+
+  function formatAppBuildUpdatedAtDisplay(raw) {
+    const parsed = parseAppBuildUpdatedAt(raw || getAppBuildUpdatedAt());
+    if (!parsed) return String(raw || getAppBuildUpdatedAt());
+    try {
+      return new Intl.DateTimeFormat("zh-Hant-HK", {
+        timeZone: "Asia/Hong_Kong",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(parsed);
+    } catch (e) {
+      return String(raw || getAppBuildUpdatedAt());
+    }
+  }
+
   function updateBuildVersionBadge() {
     const badge = document.querySelector(".build-version-badge");
     if (!badge) return;
@@ -584,7 +617,8 @@
       titleEl.textContent = "版本 v" + version;
     }
     if (updatedEl) {
-      updatedEl.textContent = "最新更新：" + getAppBuildUpdatedAt();
+      updatedEl.textContent =
+        "最新更新：" + formatAppBuildUpdatedAtDisplay(getAppBuildUpdatedAt());
     }
     if (devBlock) devBlock.hidden = !developerMode;
     if (list) {
@@ -7027,12 +7061,12 @@
       const openBtn = document.createElement("button");
       openBtn.type = "button";
       openBtn.className = "favorite-links-item__open";
-      openBtn.innerHTML =
-        '<span class="favorite-links-item__label">' +
-        favoriteLinkDisplayLabel(item) +
-        '</span><span class="favorite-links-item__url">' +
-        item.url +
-        "</span>";
+      openBtn.title = item.url;
+      const labelSpan = document.createElement("span");
+      labelSpan.className = "favorite-links-item__label";
+      labelSpan.textContent =
+        index + 1 + ". " + favoriteLinkDisplayLabel(item);
+      openBtn.appendChild(labelSpan);
       openBtn.addEventListener("click", function () {
         openFavoriteLink(item.url);
       });
