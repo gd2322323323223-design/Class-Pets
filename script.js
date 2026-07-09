@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "120";
-  const APP_BUILD_UPDATED_AT = "2026-07-09T13:22:49+08:00";
+  const APP_BUILD_VERSION = "121";
+  const APP_BUILD_UPDATED_AT = "2026-07-09T13:54:33+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -4130,7 +4130,6 @@
     const modal = document.getElementById("site-access-modal");
     const input = document.getElementById("site-access-password");
     const submitBtn = document.getElementById("btn-site-access-submit");
-    const cancelBtn = document.getElementById("btn-site-access-cancel");
     const errorEl = document.getElementById("site-access-error");
 
     if (!modal || !input || !submitBtn) {
@@ -4147,16 +4146,6 @@
       document.body.classList.remove("site-access-open");
       input.value = "";
       showError(false);
-    }
-
-    function denyAccess() {
-      closeGate();
-      document.body.innerHTML =
-        '<main style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;">' +
-        '<div style="max-width:420px;padding:1rem 1.25rem;border-radius:12px;background:#fff7ed;color:#7c2d12;border:2px solid #fdba74;font-weight:700;text-align:center;">' +
-        "未輸入正確密碼，已停止進入網站。" +
-        "</div></main>";
-      onDone(false);
     }
 
     function trySubmit() {
@@ -4178,10 +4167,6 @@
       trySubmit();
     }
 
-    function onCancelClick() {
-      denyAccess();
-    }
-
     function onInputKey(ev) {
       if (ev.key === "Enter") {
         ev.preventDefault();
@@ -4190,7 +4175,6 @@
     }
 
     submitBtn.addEventListener("click", onSubmitClick);
-    if (cancelBtn) cancelBtn.addEventListener("click", onCancelClick);
     input.addEventListener("keydown", onInputKey);
 
     modal.hidden = false;
@@ -6271,14 +6255,14 @@
     if (!fieldsEl) return;
     fieldsEl.innerHTML = "";
 
-    dailyMissions.forEach(function (mission) {
+    dailyMissions.forEach(function (mission, index) {
       const card = document.createElement("div");
       card.className = "mission-template-card";
       card.dataset.missionId = mission.id;
 
       const heading = document.createElement("p");
       heading.className = "mission-template-card__heading";
-      heading.textContent = mission.title;
+      heading.textContent = index + 1 + ". " + mission.title;
 
       const titleLabel = document.createElement("label");
       titleLabel.className = "tools-field";
