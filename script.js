@@ -4,11 +4,11 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "119";
-  const APP_BUILD_UPDATED_AT = "2026-06-24T15:04:33+08:00";
+  const APP_BUILD_VERSION = "120";
+  const APP_BUILD_UPDATED_AT = "2026-07-09T13:22:49+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
-  const PHONE_MODE_STORAGE_KEY = "classroom-phone-mode-v1";
+  const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
   const FAVORITE_LINKS_MAX = 10;
   const DEV_MODE_PASSWORD = "0315";
   const DEV_MODE_BADGE_CLICKS = 4;
@@ -145,7 +145,6 @@
 
   const gridEl = document.getElementById("dashboard-grid");
   const btnTeacherMode = document.getElementById("btn-teacher-mode");
-  const btnPhoneMode = document.getElementById("btn-phone-mode");
 
   function canLoadGlbAssets() {
     const protocol = window.location.protocol;
@@ -163,7 +162,6 @@
     return Number.isInteger(n) && n >= MIN_SLOT_COUNT && n <= MAX_SLOT_COUNT;
   }
   let teacherMode = false;
-  let phoneMode = false;
   let developerMode = false;
   let versionBadgeClickCount = 0;
   let versionBadgeClickTimerId = null;
@@ -226,7 +224,7 @@
   const MISSION_ROLL_MS = 2500;
   const MISSION_DEFAULT_REWARD = "全班可加 3 分！";
 
-  const DAILY_MISSIONS = [
+  const DEFAULT_DAILY_MISSIONS = [
     {
       id: "harvest",
       title: "收穫滿滿",
@@ -259,6 +257,92 @@
       reward: MISSION_DEFAULT_REWARD,
     },
   ];
+
+  let dailyMissions = [];
+
+  function cloneDefaultDailyMissions() {
+    return DEFAULT_DAILY_MISSIONS.map(function (mission) {
+      const copy = {
+        id: mission.id,
+        title: mission.title,
+        desc: mission.desc,
+        reward: mission.reward,
+      };
+      if (mission.type) copy.type = mission.type;
+      return copy;
+    });
+  }
+
+  function normalizeMissionTemplates(raw) {
+    if (!Array.isArray(raw) || !raw.length) return cloneDefaultDailyMissions();
+    const byId = {};
+    cloneDefaultDailyMissions().forEach(function (mission) {
+      byId[mission.id] = mission;
+    });
+    raw.forEach(function (item) {
+      if (!item || typeof item.id !== "string" || !byId[item.id]) return;
+      const base = byId[item.id];
+      if (typeof item.title === "string" && item.title.trim()) {
+        base.title = item.title.trim();
+      }
+      if (typeof item.desc === "string" && item.desc.trim()) {
+        base.desc = item.desc.trim();
+      }
+      if (typeof item.reward === "string" && item.reward.trim()) {
+        base.reward = item.reward.trim();
+      }
+    });
+    return DEFAULT_DAILY_MISSIONS.map(function (mission) {
+      return byId[mission.id];
+    });
+  }
+
+  function loadMissionTemplatesPack() {
+    try {
+      const raw = localStorage.getItem(MISSION_TEMPLATES_STORAGE_KEY);
+      if (!raw) return cloneDefaultDailyMissions();
+      return normalizeMissionTemplates(JSON.parse(raw));
+    } catch (e) {
+      return cloneDefaultDailyMissions();
+    }
+  }
+
+  function saveMissionTemplatesPack(list, options) {
+    options = options || {};
+    try {
+      localStorage.setItem(MISSION_TEMPLATES_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {}
+    if (!options.skipCloudSync) scheduleCloudSync();
+  }
+
+  function applyMissionTemplatesFromCloud(raw) {
+    dailyMissions = normalizeMissionTemplates(raw);
+    saveMissionTemplatesPack(dailyMissions, { skipCloudSync: true });
+    if (appBootstrapped) renderMissionTemplatesEditor();
+  }
+
+  function refreshActiveMissionDisplay() {
+    if (!currentDailyMission) return;
+    const refreshed = findMissionById(currentDailyMission.id);
+    if (!refreshed) return;
+    currentDailyMission = refreshed;
+    if (missionReminderVisible) {
+      fillMissionContent("reminder", refreshed);
+    }
+  }
+
+  function serializeMissionTemplates() {
+    return dailyMissions.map(function (mission) {
+      const item = {
+        id: mission.id,
+        title: mission.title,
+        desc: mission.desc,
+        reward: mission.reward || MISSION_DEFAULT_REWARD,
+      };
+      if (mission.type) item.type = mission.type;
+      return item;
+    });
+  }
 
   function getClassTotalScore() {
     return slots.reduce(function (sum, s) {
@@ -895,8 +979,8 @@
 
   function findMissionById(id) {
     if (!id) return null;
-    for (let i = 0; i < DAILY_MISSIONS.length; i++) {
-      if (DAILY_MISSIONS[i].id === id) return DAILY_MISSIONS[i];
+    for (let i = 0; i < dailyMissions.length; i++) {
+      if (dailyMissions[i].id === id) return dailyMissions[i];
     }
     return null;
   }
@@ -909,6 +993,9 @@
       scoreKingMission.active = false;
       scoreKingMission.sessionScore = 0;
       return;
+    }
+    if (Array.isArray(raw.templates) && raw.templates.length) {
+      applyMissionTemplatesFromCloud(raw.templates);
     }
     dailyMissionDrawCommitted = !!raw.dailyMissionDrawCommitted;
     missionReminderVisible = !!raw.missionReminderVisible;
@@ -927,6 +1014,8 @@
     }
     if (!missionReminderVisible) {
       currentDailyMission = null;
+    } else if (currentDailyMission && appBootstrapped) {
+      fillMissionContent("reminder", currentDailyMission);
     }
   }
 
@@ -939,6 +1028,7 @@
         active: scoreKingMission.active,
         sessionScore: scoreKingMission.sessionScore,
       },
+      templates: serializeMissionTemplates(),
     };
   }
 
@@ -2348,16 +2438,6 @@
 
   function renderSlotScoreFx(el, slot) {
     if (!el || !slot) return;
-    if (phoneMode) {
-      el.classList.remove(
-        "slot--fx-glow",
-        "slot--fx-border",
-        "slot--fx-ripple",
-        "slot--fx-stars",
-        "slot--fx-crown"
-      );
-      return;
-    }
     const score = slot.hatched ? Math.max(0, slot.score) : 0;
     const fxLevel = getSlotScoreFxLevel(score);
 
@@ -6094,8 +6174,8 @@
   }
 
   function pickRandomDailyMission() {
-    const idx = Math.floor(Math.random() * DAILY_MISSIONS.length);
-    return DAILY_MISSIONS[idx];
+    const idx = Math.floor(Math.random() * dailyMissions.length);
+    return dailyMissions[idx];
   }
 
   function getMissionRewardText(mission) {
@@ -6121,7 +6201,7 @@
   }
 
   function getDailyMissionById(id) {
-    return DAILY_MISSIONS.find(function (m) {
+    return dailyMissions.find(function (m) {
       return m.id === id;
     });
   }
@@ -6159,7 +6239,7 @@
     list.innerHTML = "";
     const currentId = currentDailyMission ? currentDailyMission.id : "";
 
-    DAILY_MISSIONS.forEach(function (mission) {
+    dailyMissions.forEach(function (mission) {
       const li = document.createElement("li");
       const btn = document.createElement("button");
       btn.type = "button";
@@ -6184,6 +6264,142 @@
       li.appendChild(btn);
       list.appendChild(li);
     });
+  }
+
+  function renderMissionTemplatesEditor() {
+    const fieldsEl = document.getElementById("mission-templates-fields");
+    if (!fieldsEl) return;
+    fieldsEl.innerHTML = "";
+
+    dailyMissions.forEach(function (mission) {
+      const card = document.createElement("div");
+      card.className = "mission-template-card";
+      card.dataset.missionId = mission.id;
+
+      const heading = document.createElement("p");
+      heading.className = "mission-template-card__heading";
+      heading.textContent = mission.title;
+
+      const titleLabel = document.createElement("label");
+      titleLabel.className = "tools-field";
+      titleLabel.innerHTML =
+        '<span>任務標題</span><input class="tools-input mission-template-card__title" type="text" maxlength="32" value="" />';
+      titleLabel.querySelector("input").value = mission.title;
+
+      const descLabel = document.createElement("label");
+      descLabel.className = "tools-field";
+      const descInput = document.createElement("textarea");
+      descInput.className = "tools-input mission-template-card__desc";
+      descInput.rows = 3;
+      descInput.maxLength = 240;
+      descInput.value = mission.desc;
+      descLabel.innerHTML = "<span>任務內容</span>";
+      descLabel.appendChild(descInput);
+
+      const rewardLabel = document.createElement("label");
+      rewardLabel.className = "tools-field";
+      rewardLabel.innerHTML =
+        '<span>獎勵說明</span><input class="tools-input mission-template-card__reward" type="text" maxlength="48" value="" />';
+      rewardLabel.querySelector("input").value =
+        mission.reward || MISSION_DEFAULT_REWARD;
+
+      card.appendChild(heading);
+      card.appendChild(titleLabel);
+      card.appendChild(descLabel);
+      card.appendChild(rewardLabel);
+      fieldsEl.appendChild(card);
+    });
+  }
+
+  function collectMissionTemplatesFromEditor() {
+    const fieldsEl = document.getElementById("mission-templates-fields");
+    if (!fieldsEl) return null;
+
+    const next = [];
+    let valid = true;
+
+    fieldsEl.querySelectorAll(".mission-template-card").forEach(function (card) {
+      const id = card.dataset.missionId;
+      const base = findMissionById(id);
+      if (!base) return;
+
+      const titleInput = card.querySelector(".mission-template-card__title");
+      const descInput = card.querySelector(".mission-template-card__desc");
+      const rewardInput = card.querySelector(".mission-template-card__reward");
+
+      const title = titleInput ? String(titleInput.value || "").trim() : "";
+      const desc = descInput ? String(descInput.value || "").trim() : "";
+      const reward = rewardInput ? String(rewardInput.value || "").trim() : "";
+
+      if (!title || !desc) {
+        valid = false;
+        return;
+      }
+
+      const item = {
+        id: base.id,
+        title: title,
+        desc: desc,
+        reward: reward || MISSION_DEFAULT_REWARD,
+      };
+      if (base.type) item.type = base.type;
+      next.push(item);
+    });
+
+    if (!valid || next.length !== dailyMissions.length) return null;
+    return next;
+  }
+
+  function onMissionTemplatesSaveClick() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+
+    const next = collectMissionTemplatesFromEditor();
+    if (!next) {
+      showAppToast("請填寫每項任務的標題與內容。", { variant: "warn" });
+      return;
+    }
+
+    dailyMissions = normalizeMissionTemplates(next);
+    saveMissionTemplatesPack(dailyMissions);
+    refreshActiveMissionDisplay();
+    renderMissionTemplatesEditor();
+    if (
+      document.getElementById("mission-pick-modal") &&
+      !document.getElementById("mission-pick-modal").hidden
+    ) {
+      renderMissionPickList();
+    }
+    showAppToast("任務內容已儲存並同步雲端。", { variant: "success" });
+  }
+
+  function onMissionTemplatesResetClick() {
+    if (!teacherMode && !ensureTeacherModeOn()) return;
+
+    showAppConfirm("確定要還原所有任務為預設內容嗎？", {
+      title: "還原預設任務",
+      confirmText: "還原",
+      danger: true,
+    }).then(function (ok) {
+      if (!ok) return;
+      dailyMissions = cloneDefaultDailyMissions();
+      saveMissionTemplatesPack(dailyMissions);
+      refreshActiveMissionDisplay();
+      renderMissionTemplatesEditor();
+      if (
+        document.getElementById("mission-pick-modal") &&
+        !document.getElementById("mission-pick-modal").hidden
+      ) {
+        renderMissionPickList();
+      }
+      showAppToast("已還原預設任務內容。", { variant: "success" });
+    });
+  }
+
+  function syncMissionTemplatesEditorVisibility() {
+    const editor = document.getElementById("mission-templates-editor");
+    if (!editor) return;
+    editor.hidden = !teacherMode;
+    if (teacherMode) renderMissionTemplatesEditor();
   }
 
   function openMissionPickModal() {
@@ -6442,7 +6658,7 @@
 
     const started = Date.now();
     const tick = function () {
-      const sample = DAILY_MISSIONS[Math.floor(Math.random() * DAILY_MISSIONS.length)];
+      const sample = dailyMissions[Math.floor(Math.random() * dailyMissions.length)];
       rollEl.textContent = "🎲 抽取中：「" + sample.title + "」…";
       if (Date.now() - started >= MISSION_ROLL_MS) {
         if (card) card.classList.remove("is-rolling-reveal");
@@ -6757,6 +6973,8 @@
     const pickCloseBtn = document.getElementById("btn-mission-pick-close");
     const pickModal = document.getElementById("mission-pick-modal");
     const successClose = document.getElementById("btn-mission-success-close");
+    const templatesSaveBtn = document.getElementById("btn-mission-templates-save");
+    const templatesResetBtn = document.getElementById("btn-mission-templates-reset");
     const encourageClose = document.getElementById("btn-mission-encourage-close");
     const missionModal = document.getElementById("daily-mission-modal");
 
@@ -6787,6 +7005,13 @@
         }
       });
     }
+    if (templatesSaveBtn) {
+      templatesSaveBtn.addEventListener("click", onMissionTemplatesSaveClick);
+    }
+    if (templatesResetBtn) {
+      templatesResetBtn.addEventListener("click", onMissionTemplatesResetClick);
+    }
+    syncMissionTemplatesEditorVisibility();
     initMissionStackDrag();
   }
 
@@ -7213,68 +7438,6 @@
     renderFavoriteLinksUI();
   }
 
-  function loadPhoneModePreference() {
-    try {
-      return localStorage.getItem(PHONE_MODE_STORAGE_KEY) === "1";
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function savePhoneModePreference() {
-    try {
-      localStorage.setItem(PHONE_MODE_STORAGE_KEY, phoneMode ? "1" : "0");
-    } catch (e) {}
-  }
-
-  function invalidateSlotStages() {
-    document.querySelectorAll(".slot__stage").forEach(function (stage) {
-      delete stage.dataset.stageKey;
-    });
-  }
-
-  function syncPhoneModeUI() {
-    document.body.classList.toggle("phone-mode-active", phoneMode);
-    if (btnPhoneMode) {
-      btnPhoneMode.classList.toggle("is-active", phoneMode);
-      const labelEl = document.getElementById("phone-mode-btn-label");
-      if (labelEl) {
-        labelEl.textContent = phoneMode ? "電話模式-開" : "電話模式-關";
-      }
-      btnPhoneMode.title = phoneMode
-        ? "點擊關閉電話模式（顯示 3D 模型）"
-        : "點擊開啟電話模式（僅顯示姓名與加減分）";
-      btnPhoneMode.setAttribute(
-        "aria-label",
-        phoneMode
-          ? "電話模式已開啟，點擊關閉"
-          : "電話模式已關閉，點擊開啟"
-      );
-    }
-  }
-
-  function setPhoneMode(enabled) {
-    const next = !!enabled;
-    if (phoneMode === next) return;
-    phoneMode = next;
-    savePhoneModePreference();
-    syncPhoneModeUI();
-    invalidateSlotStages();
-    if (appBootstrapped) renderAll();
-  }
-
-  function togglePhoneMode() {
-    setPhoneMode(!phoneMode);
-  }
-
-  function initPhoneModeModule() {
-    phoneMode = loadPhoneModePreference();
-    syncPhoneModeUI();
-    if (btnPhoneMode) {
-      btnPhoneMode.addEventListener("click", togglePhoneMode);
-    }
-  }
-
   const TOOLS_PANEL_NAMED_THEMES = [
     "mission",
     "lucky",
@@ -7624,7 +7787,6 @@
   }
 
   function getSlotStageKey(slot) {
-    if (phoneMode) return "phone";
     if (slot.hatched) {
       return "h:" + getSlotDisplayAnimal(slot);
     }
@@ -7640,10 +7802,6 @@
     }
     stage.dataset.stageKey = key;
     stage.innerHTML = "";
-    if (phoneMode) {
-      clearSlotStageInteractivity(stage);
-      return;
-    }
     if (slot.hatched) {
       appendHatchedBeast(stage, slot, "slot__viewer");
     } else {
@@ -7986,6 +8144,7 @@
     hint.textContent = teacherMode
       ? "已進入編輯模式。"
       : "進入編輯模式，開啟更多功能。";
+    hint.classList.toggle("is-active", teacherMode);
   }
 
   function syncTeacherToolsPanelsVisibility() {
@@ -8034,6 +8193,7 @@
     if (gardenSaveBtn) gardenSaveBtn.hidden = !teacherMode;
     syncStudentCountUI();
     refreshMissionPickButton();
+    syncMissionTemplatesEditorVisibility();
     syncAllQuickScoreMenus();
     slots.forEach(function (slot) {
       const el = document.querySelector('.slot[data-slot-id="' + slot.id + '"]');
@@ -8241,10 +8401,6 @@
     if (teacherMode) {
       closeQuickScoreMenu();
       onSlotTeacherAction(slotId);
-      return;
-    }
-    if (phoneMode) {
-      onScoreClick(slotId);
     }
   }
 
@@ -8318,6 +8474,7 @@
     refreshDeveloperModeUI();
     syncDeveloperToolsVisibility();
     showFileProtocolBanner();
+    dailyMissions = loadMissionTemplatesPack();
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);
     syncAllSlotsAutoHatch();
@@ -8333,7 +8490,6 @@
     preloadFreesoundEffects();
     initToolsSidebar();
     initAnimalPickModal();
-    initPhoneModeModule();
     updateDashHeaderTitle();
 
     if (btnTeacherMode) {

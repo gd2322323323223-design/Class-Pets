@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="app-build-version" content="119" />
-  <meta name="app-build-updated" content="2026-06-24T15:04:33+08:00" />
+  <meta name="app-build-version" content="120" />
+  <meta name="app-build-updated" content="2026-07-09T13:22:49+08:00" />
   <title>ClassPets班級系統</title>
-  <link rel="stylesheet" href="style.css?v=119" />
+  <link rel="stylesheet" href="style.css?v=120" />
   <script
     type="module"
     src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"
@@ -111,17 +111,6 @@
 
   <button
     type="button"
-    id="btn-phone-mode"
-    class="phone-mode-btn"
-    title="點擊開啟電話模式（僅顯示姓名與加減分）"
-    aria-label="電話模式已關閉，點擊開啟"
-  >
-    <span class="phone-mode-btn__icon" aria-hidden="true">📱</span>
-    <span id="phone-mode-btn-label" class="phone-mode-btn__label">電話模式-關</span>
-  </button>
-
-  <button
-    type="button"
     id="btn-tools-toggle"
     class="tools-tab"
     aria-expanded="false"
@@ -178,6 +167,28 @@
         >
           🎲 抽取任務
         </button>
+      </div>
+      <div id="mission-templates-editor" class="mission-templates-editor" hidden>
+        <p class="tools-panel__desc tools-panel__desc--on-mission">
+          編輯各項任務的標題、內容與獎勵說明（儲存後同步雲端）。
+        </p>
+        <div id="mission-templates-fields" class="mission-templates-fields"></div>
+        <div class="tools-panel__actions">
+          <button
+            type="button"
+            id="btn-mission-templates-save"
+            class="tools-btn tools-btn--primary"
+          >
+            儲存任務內容
+          </button>
+          <button
+            type="button"
+            id="btn-mission-templates-reset"
+            class="tools-btn tools-btn--ghost"
+          >
+            還原預設
+          </button>
+        </div>
       </div>
       </div>
     </section>
@@ -1256,6 +1267,6 @@
   <script src="firebase-config.js"></script>
   <script src="firebase-init.js"></script>
   <script src="freesound-config.js"></script>
-  <script src="script.js?v=119"></script>
+  <script src="script.js?v=120"></script>
 </body>
 </html>
