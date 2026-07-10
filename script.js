@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "121";
-  const APP_BUILD_UPDATED_AT = "2026-07-09T13:54:33+08:00";
+  const APP_BUILD_VERSION = "123";
+  const APP_BUILD_UPDATED_AT = "2026-07-10T11:20:09+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -297,27 +297,66 @@
     });
   }
 
-  function loadMissionTemplatesPack() {
+  function loadMissionTemplatesPackObject() {
     try {
       const raw = localStorage.getItem(MISSION_TEMPLATES_STORAGE_KEY);
-      if (!raw) return cloneDefaultDailyMissions();
-      return normalizeMissionTemplates(JSON.parse(raw));
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        const legacy = { _legacy: normalizeMissionTemplates(parsed) };
+        saveMissionTemplatesPackObject(legacy);
+        return legacy;
+      }
+      return parsed && typeof parsed === "object" && !Array.isArray(parsed)
+        ? parsed
+        : {};
     } catch (e) {
-      return cloneDefaultDailyMissions();
+      return {};
     }
   }
 
-  function saveMissionTemplatesPack(list, options) {
-    options = options || {};
+  function saveMissionTemplatesPackObject(pack) {
     try {
-      localStorage.setItem(MISSION_TEMPLATES_STORAGE_KEY, JSON.stringify(list));
+      localStorage.setItem(MISSION_TEMPLATES_STORAGE_KEY, JSON.stringify(pack));
     } catch (e) {}
+  }
+
+  function loadMissionTemplatesForClass() {
+    const pack = loadMissionTemplatesPackObject();
+    const key = getClassStorageKey();
+    if (Array.isArray(pack[key])) {
+      return normalizeMissionTemplates(pack[key]);
+    }
+    if (Array.isArray(pack._legacy)) {
+      const migrated = normalizeMissionTemplates(pack._legacy);
+      pack[key] = migrated;
+      delete pack._legacy;
+      saveMissionTemplatesPackObject(pack);
+      return migrated;
+    }
+    return cloneDefaultDailyMissions();
+  }
+
+  function saveMissionTemplatesForClass(list, options) {
+    options = options || {};
+    const normalized = normalizeMissionTemplates(list);
+    const pack = loadMissionTemplatesPackObject();
+    pack[getClassStorageKey()] = normalized;
+    saveMissionTemplatesPackObject(pack);
+    dailyMissions = normalized;
     if (!options.skipCloudSync) scheduleCloudSync();
   }
 
+  function loadMissionTemplatesForCurrentClassFromLocal() {
+    dailyMissions = loadMissionTemplatesForClass();
+    refreshActiveMissionDisplay();
+    if (appBootstrapped) renderMissionTemplatesEditor();
+  }
+
   function applyMissionTemplatesFromCloud(raw) {
-    dailyMissions = normalizeMissionTemplates(raw);
-    saveMissionTemplatesPack(dailyMissions, { skipCloudSync: true });
+    saveMissionTemplatesForClass(normalizeMissionTemplates(raw), {
+      skipCloudSync: true,
+    });
     if (appBootstrapped) renderMissionTemplatesEditor();
   }
 
@@ -874,6 +913,11 @@
       .replace(/[^a-z0-9_-]/g, "");
   }
 
+  function getClassStorageKey() {
+    const code = sanitizeClassCode(currentClassCode);
+    return code || "_default";
+  }
+
   function setCloudSyncStatus(text, isError) {
     const statusEl = document.getElementById("class-code-sync-status");
     const hintEl = document.getElementById("class-code-sync-hint");
@@ -992,10 +1036,13 @@
       dailyMissionDrawCommitted = false;
       scoreKingMission.active = false;
       scoreKingMission.sessionScore = 0;
+      loadMissionTemplatesForCurrentClassFromLocal();
       return;
     }
     if (Array.isArray(raw.templates) && raw.templates.length) {
       applyMissionTemplatesFromCloud(raw.templates);
+    } else {
+      loadMissionTemplatesForCurrentClassFromLocal();
     }
     dailyMissionDrawCommitted = !!raw.dailyMissionDrawCommitted;
     missionReminderVisible = !!raw.missionReminderVisible;
@@ -1564,6 +1611,16 @@
         if (
           !Array.isArray(data.favoriteLinks) &&
           loadFavoriteLinksForClass().length > 0
+        ) {
+          scheduleCloudSync();
+        }
+        if (
+          !(
+            data.mission &&
+            Array.isArray(data.mission.templates) &&
+            data.mission.templates.length
+          ) &&
+          loadMissionTemplatesPackObject()[getClassStorageKey()]
         ) {
           scheduleCloudSync();
         }
@@ -6267,7 +6324,7 @@
       const titleLabel = document.createElement("label");
       titleLabel.className = "tools-field";
       titleLabel.innerHTML =
-        '<span>任務標題</span><input class="tools-input mission-template-card__title" type="text" maxlength="32" value="" />';
+        '<span>任務標題</span><input class="tools-input mission-template-card__title" type="text" maxlength="48" value="" />';
       titleLabel.querySelector("input").value = mission.title;
 
       const descLabel = document.createElement("label");
@@ -6275,7 +6332,7 @@
       const descInput = document.createElement("textarea");
       descInput.className = "tools-input mission-template-card__desc";
       descInput.rows = 3;
-      descInput.maxLength = 240;
+      descInput.maxLength = 500;
       descInput.value = mission.desc;
       descLabel.innerHTML = "<span>任務內容</span>";
       descLabel.appendChild(descInput);
@@ -6283,7 +6340,7 @@
       const rewardLabel = document.createElement("label");
       rewardLabel.className = "tools-field";
       rewardLabel.innerHTML =
-        '<span>獎勵說明</span><input class="tools-input mission-template-card__reward" type="text" maxlength="48" value="" />';
+        '<span>獎勵說明</span><input class="tools-input mission-template-card__reward" type="text" maxlength="100" value="" />';
       rewardLabel.querySelector("input").value =
         mission.reward || MISSION_DEFAULT_REWARD;
 
@@ -6344,7 +6401,7 @@
     }
 
     dailyMissions = normalizeMissionTemplates(next);
-    saveMissionTemplatesPack(dailyMissions);
+    saveMissionTemplatesForClass(dailyMissions);
     refreshActiveMissionDisplay();
     renderMissionTemplatesEditor();
     if (
@@ -6366,7 +6423,7 @@
     }).then(function (ok) {
       if (!ok) return;
       dailyMissions = cloneDefaultDailyMissions();
-      saveMissionTemplatesPack(dailyMissions);
+      saveMissionTemplatesForClass(dailyMissions);
       refreshActiveMissionDisplay();
       renderMissionTemplatesEditor();
       if (
@@ -6485,7 +6542,7 @@
       titleCenter: true,
       compact: true,
       actionsRow: true,
-      confirmText: "是",
+      confirmText: "繼續任務",
       cancelText: "強制關閉",
     }).then(function (ok) {
       if (ok) {
@@ -7212,8 +7269,7 @@
   }
 
   function getFavoriteLinksClassKey() {
-    const code = sanitizeClassCode(currentClassCode);
-    return code || "_default";
+    return getClassStorageKey();
   }
 
   function loadFavoriteLinksPack() {
@@ -8458,7 +8514,7 @@
     refreshDeveloperModeUI();
     syncDeveloperToolsVisibility();
     showFileProtocolBanner();
-    dailyMissions = loadMissionTemplatesPack();
+    dailyMissions = cloneDefaultDailyMissions();
     loadSlots();
     slots.forEach(fixLegacySlotAnimal);
     syncAllSlotsAutoHatch();
