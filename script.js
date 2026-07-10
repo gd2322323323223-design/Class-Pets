@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "123";
-  const APP_BUILD_UPDATED_AT = "2026-07-10T11:20:09+08:00";
+  const APP_BUILD_VERSION = "124";
+  const APP_BUILD_UPDATED_AT = "2026-07-10T11:37:00+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -6535,9 +6535,16 @@
     hideMissionReminder();
   }
 
+  function continueMissionAfterCloseMisclick() {
+    if (!currentDailyMission) return;
+    missionReminderVisible = true;
+    syncMissionHudLayout();
+    setMissionReminderExpanded(true);
+  }
+
   function closeMissionReminderManual() {
     showAppConfirm("", {
-      title: "任務是否完成？",
+      title: "是否要關閉任務？",
       hideMessage: true,
       titleCenter: true,
       compact: true,
@@ -6546,7 +6553,7 @@
       cancelText: "強制關閉",
     }).then(function (ok) {
       if (ok) {
-        onMissionReminderGoalAchieved();
+        continueMissionAfterCloseMisclick();
         return;
       }
       forceCloseMissionReminder();
