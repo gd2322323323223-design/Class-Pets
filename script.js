@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "124";
-  const APP_BUILD_UPDATED_AT = "2026-07-10T11:37:00+08:00";
+  const APP_BUILD_VERSION = "125";
+  const APP_BUILD_UPDATED_AT = "2026-07-13T15:15:21+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -5267,27 +5267,46 @@
 
     if (scoreBtns && group.memberIds.length > 0) {
       scoreBtns.innerHTML = "";
-      function appendGroupScoreBtn(label, delta) {
+      scoreBtns.className = "group-members-modal__score-menu";
+
+      const minusRow = document.createElement("div");
+      minusRow.className =
+        "group-members-modal__score-btns group-members-modal__score-btns--minus";
+      minusRow.setAttribute("aria-label", "全組扣分");
+
+      const plusRow = document.createElement("div");
+      plusRow.className =
+        "group-members-modal__score-btns group-members-modal__score-btns--plus";
+      plusRow.setAttribute("aria-label", "全組加分");
+
+      function appendGroupScoreBtn(parent, label, delta) {
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "group-members-modal__score-btn";
-        if (delta < 0) btn.classList.add("group-members-modal__score-btn--minus");
+        if (delta < 0) {
+          btn.classList.add("group-members-modal__score-btn--minus");
+        } else {
+          btn.classList.add("group-members-modal__score-btn--plus");
+        }
         btn.textContent = label;
         btn.addEventListener("click", function () {
           applyGroupQuickScore(groupId, delta);
           closeGroupMembersModal();
         });
-        scoreBtns.appendChild(btn);
+        parent.appendChild(btn);
       }
+
       QUICK_ADD_VALUES.forEach(function (delta) {
-        appendGroupScoreBtn("+" + delta, delta);
+        appendGroupScoreBtn(minusRow, "-" + delta, -delta);
       });
       QUICK_ADD_VALUES.forEach(function (delta) {
-        appendGroupScoreBtn("-" + delta, -delta);
+        appendGroupScoreBtn(plusRow, "+" + delta, delta);
       });
+
       const customBtn = document.createElement("button");
       customBtn.type = "button";
-      customBtn.className = "group-members-modal__score-btn";
+      customBtn.className =
+        "group-members-modal__score-btn group-members-modal__score-btn--custom";
       customBtn.textContent = "自訂";
       customBtn.addEventListener("click", function () {
         showAppPrompt(
@@ -5307,7 +5326,10 @@
           closeGroupMembersModal();
         });
       });
-      scoreBtns.appendChild(customBtn);
+      plusRow.appendChild(customBtn);
+
+      scoreBtns.appendChild(minusRow);
+      scoreBtns.appendChild(plusRow);
     }
 
     renderGroupMembersAddList(groupId);
