@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "125";
-  const APP_BUILD_UPDATED_AT = "2026-07-13T15:15:21+08:00";
+  const APP_BUILD_VERSION = "126";
+  const APP_BUILD_UPDATED_AT = "2026-07-15T07:54:24+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -5803,6 +5803,7 @@
 
     if (cardEl) {
       cardEl.classList.toggle("lucky-modal__card--grid-winners", count >= 7);
+      cardEl.classList.toggle("lucky-modal__card--hero", count === 1 || count === 2);
     }
 
     winnerIds.forEach(function (id) {
@@ -5823,7 +5824,12 @@
       bodyEl.innerHTML = "";
       bodyEl.className = "lucky-modal__body";
     }
-    if (cardEl) cardEl.classList.remove("lucky-modal__card--grid-winners");
+    if (cardEl) {
+      cardEl.classList.remove(
+        "lucky-modal__card--grid-winners",
+        "lucky-modal__card--hero"
+      );
+    }
     luckyDrawWinnerIds = [];
     if (modal) modal.hidden = true;
     document.body.classList.remove("lucky-modal-open");
