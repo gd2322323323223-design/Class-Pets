@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "126";
-  const APP_BUILD_UPDATED_AT = "2026-07-15T07:54:24+08:00";
+  const APP_BUILD_VERSION = "127";
+  const APP_BUILD_UPDATED_AT = "2026-07-15T08:26:10+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -44,6 +44,8 @@
   const SITE_ACCESS_SESSION_KEY = "classroom-site-access-ok-v1";
   const CLASS_CODE_STORAGE_KEY = "classroom-class-code-v1";
   const GROWTH_JOURNAL_DAYS = 7;
+  const ACTIVITY_LOG_DAYS = 30;
+  const ACTIVITY_LOG_MAX = 200;
 
   /** 23 種動物（與 models/animal-*.glb 檔名一致）：1~22 號依序對應前 22 種 */
   const ANIMALS = [
@@ -967,6 +969,7 @@
         lives: clampLives(s.lives),
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, s.id),
         history: normalizeScoreHistory(s.history),
+        activityLog: normalizeActivityLog(s.activityLog),
       };
     });
   }
@@ -994,6 +997,7 @@
         lives: coerceCloudNumber(s.lives, LIVES_DEFAULT),
         beamHueBase: normalizeBeamHueBase(s.beamHueBase, id),
         history: normalizeScoreHistory(s.history),
+        activityLog: normalizeActivityLog(s.activityLog),
       };
     }).map(function (slot) {
       fixLegacySlotAnimal(slot);
@@ -1157,6 +1161,7 @@
             lives: clampLives(s.lives),
             beamHueBase: normalizeBeamHueBase(s.beamHueBase, s.id),
             history: {},
+            activityLog: [],
           };
         }),
         updatedAt: Date.now(),
@@ -2181,6 +2186,7 @@
       lives: LIVES_DEFAULT,
       beamHueBase: beamHueBaseForSlot(id),
       history: {},
+      activityLog: [],
     };
   }
 
@@ -2683,6 +2689,71 @@
     return out;
   }
 
+  function activityLogCutoffTs() {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - (ACTIVITY_LOG_DAYS - 1));
+    return d.getTime();
+  }
+
+  function normalizeActivityLog(raw) {
+    if (!Array.isArray(raw)) return [];
+    const cutoff = activityLogCutoffTs();
+    const allowed = {
+      score_up: true,
+      score_down: true,
+      life_down: true,
+      life_up: true,
+      wake: true,
+      lucky: true,
+    };
+    const out = [];
+    raw.forEach(function (item) {
+      if (!item || typeof item !== "object") return;
+      const type = String(item.type || "");
+      if (!allowed[type]) return;
+      const ts = Number(item.ts);
+      if (!Number.isFinite(ts) || ts < cutoff) return;
+      const entry = { type: type, ts: Math.floor(ts) };
+      if (type === "score_up" || type === "score_down" || type === "lucky") {
+        const delta = parseInt(item.delta, 10);
+        if (!Number.isFinite(delta) || delta === 0) return;
+        entry.delta = delta;
+      }
+      out.push(entry);
+    });
+    out.sort(function (a, b) {
+      return a.ts - b.ts;
+    });
+    if (out.length > ACTIVITY_LOG_MAX) {
+      return out.slice(out.length - ACTIVITY_LOG_MAX);
+    }
+    return out;
+  }
+
+  function ensureSlotActivityLog(slot) {
+    if (!slot) return [];
+    slot.activityLog = normalizeActivityLog(slot.activityLog);
+    return slot.activityLog;
+  }
+
+  function recordSlotActivity(slot, type, delta) {
+    if (!slot || !type) return;
+    const log = ensureSlotActivityLog(slot);
+    const entry = { type: type, ts: Date.now() };
+    if (
+      type === "score_up" ||
+      type === "score_down" ||
+      type === "lucky"
+    ) {
+      const d = Math.floor(Number(delta));
+      if (!Number.isFinite(d) || d === 0) return;
+      entry.delta = d;
+    }
+    log.push(entry);
+    slot.activityLog = normalizeActivityLog(log);
+  }
+
   function ensureSlotHistory(slot) {
     if (!slot.history || typeof slot.history !== "object") {
       slot.history = {};
@@ -2698,11 +2769,19 @@
     if (hist[key] === 0) delete hist[key];
   }
 
-  function applyScoreDeltaToSlot(slot, delta) {
+  function applyScoreDeltaToSlot(slot, delta, options) {
+    options = options || {};
     if (!canApplyScoreDeltaToSlot(slot, delta)) return false;
     slot.score = clampScore(slot.score + delta);
     applyScoreReaction(slot.id, delta);
     recordSlotScoreHistory(slot, delta);
+    if (options.source === "lucky") {
+      recordSlotActivity(slot, "lucky", delta);
+    } else if (delta > 0) {
+      recordSlotActivity(slot, "score_up", delta);
+    } else if (delta < 0) {
+      recordSlotActivity(slot, "score_down", delta);
+    }
     syncSlotHatchState(slot, { withFeedback: delta > 0 });
     return true;
   }
@@ -5768,9 +5847,7 @@
 
     if (slot.hatched) {
       appendHatchedBeast(beastCol, slot, "lucky-winner-row__viewer", {
-        "auto-rotate": "",
-        "rotation-per-second": "18deg",
-        "shadow-intensity": "0.85",
+        "shadow-intensity": "0.35",
       });
     } else {
       const egg = document.createElement("div");
@@ -5844,7 +5921,7 @@
     let applied = 0;
     luckyDrawWinnerIds.forEach(function (id) {
       const slot = getSlotById(id);
-      if (slot && applyScoreDeltaToSlot(slot, delta)) {
+      if (slot && applyScoreDeltaToSlot(slot, delta, { source: "lucky" })) {
         applied += 1;
       }
     });
@@ -7626,6 +7703,7 @@
     if (heartIndex < slot.lives) {
       if (heartIndex !== slot.lives - 1) return;
       slot.lives = clampLives(slot.lives - 1);
+      recordSlotActivity(slot, "life_down");
       updateSlotLifeDisplay(slot);
       saveSlots();
       playLifeWarningSound();
@@ -7639,6 +7717,7 @@
 
     if (heartIndex === slot.lives && slot.lives < LIVES_MAX) {
       slot.lives = clampLives(slot.lives + 1);
+      recordSlotActivity(slot, "life_up");
       clearSlotEmojiTimer(slotId);
       if (slot.emoji === EMOJI_SLEEP || slot.emoji === EMOJI_SAD) {
         slot.emoji = DEFAULT_EMOJI;
@@ -7656,6 +7735,7 @@
     clearSlotEmojiTimer(slotId);
     slot.lives = LIVES_DEFAULT;
     slot.emoji = DEFAULT_EMOJI;
+    recordSlotActivity(slot, "wake");
     saveSlots();
     renderSlotElement(slot);
   }

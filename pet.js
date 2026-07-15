@@ -161,6 +161,8 @@
   const quizTitle = document.getElementById("quiz-title");
   const quizOptions = document.getElementById("quiz-options");
   const btnQuizClose = document.getElementById("btn-quiz-close");
+  const activityLogList = document.getElementById("activity-log-list");
+  const activityLogEmpty = document.getElementById("activity-log-empty");
 
   /* ── 狀態 ── */
   let score = 0;
@@ -240,8 +242,89 @@
     return isAnimLocked || animationTimerId !== null;
   }
 
+  function formatActivityTime(ts) {
+    try {
+      return new Intl.DateTimeFormat("zh-Hant-HK", {
+        timeZone: "Asia/Hong_Kong",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      }).format(new Date(ts));
+    } catch (e) {
+      const d = new Date(ts);
+      const mm = String(d.getMonth() + 1).padStart(2, "0");
+      const dd = String(d.getDate()).padStart(2, "0");
+      const hh = String(d.getHours()).padStart(2, "0");
+      const mi = String(d.getMinutes()).padStart(2, "0");
+      return mm + "/" + dd + " " + hh + ":" + mi;
+    }
+  }
+
+  function activityEntryLabel(entry) {
+    if (!entry) return "";
+    if (entry.type === "score_up") {
+      return "加分 +" + Math.abs(entry.delta || 0);
+    }
+    if (entry.type === "score_down") {
+      return "減分 " + (entry.delta || 0);
+    }
+    if (entry.type === "lucky") {
+      const d = entry.delta || 0;
+      return "幸運抽籤 " + (d > 0 ? "+" : "") + d;
+    }
+    if (entry.type === "life_down") return "扣除心心";
+    if (entry.type === "life_up") return "恢復心心";
+    if (entry.type === "wake") return "睡醒";
+    return String(entry.type || "");
+  }
+
+  function activityEntryClass(entry) {
+    if (!entry) return "";
+    if (entry.type === "score_up" || entry.type === "lucky") return "is-plus";
+    if (entry.type === "score_down" || entry.type === "life_down") return "is-minus";
+    if (entry.type === "wake" || entry.type === "life_up") return "is-neutral";
+    return "";
+  }
+
+  function renderActivityLog() {
+    if (!activityLogList) return;
+    activityLogList.innerHTML = "";
+    const cutoffDate = new Date();
+    cutoffDate.setHours(0, 0, 0, 0);
+    cutoffDate.setDate(cutoffDate.getDate() - 29);
+    const cutoff = cutoffDate.getTime();
+    const raw =
+      dashSlot && Array.isArray(dashSlot.activityLog) ? dashSlot.activityLog : [];
+    const list = raw
+      .filter(function (item) {
+        return item && Number.isFinite(item.ts) && item.ts >= cutoff;
+      })
+      .slice()
+      .sort(function (a, b) {
+        return b.ts - a.ts;
+      });
+
+    if (activityLogEmpty) activityLogEmpty.hidden = list.length > 0;
+
+    list.forEach(function (entry) {
+      const li = document.createElement("li");
+      li.className = "activity-log__item " + activityEntryClass(entry);
+      li.innerHTML =
+        '<span class="activity-log__time">' +
+        formatActivityTime(entry.ts) +
+        '</span><span class="activity-log__text">' +
+        activityEntryLabel(entry) +
+        "</span>";
+      activityLogList.appendChild(li);
+    });
+  }
+
   function renderUI() {
-    if (energyScoreEl) energyScoreEl.textContent = String(score);
+    const displayScore =
+      dashSlot && typeof dashSlot.score === "number" ? dashSlot.score : score;
+    if (energyScoreEl) energyScoreEl.textContent = String(displayScore);
     if (hungerValueEl) hungerValueEl.textContent = String(hunger);
     if (energyValueEl) energyValueEl.textContent = String(energy);
     if (knowledgeValueEl) knowledgeValueEl.textContent = String(knowledge);
@@ -280,15 +363,10 @@
     }
 
     if (panelSubtitle) {
-      if (!hatched) {
-        panelSubtitle.textContent = "雙擊頂部老師後台加分，滿 20 分即可孵化";
-      } else if (isScholar) {
-        panelSubtitle.textContent = "已進化為學霸神獸，持續學習吧！";
-      } else {
-        panelSubtitle.textContent = "照顧飽食與精力，累積知識進化！";
-      }
+      panelSubtitle.textContent = "最近 30 日活動紀錄";
     }
 
+    renderActivityLog();
     updateStageStatus();
     updateActionButtons();
     saveAll();

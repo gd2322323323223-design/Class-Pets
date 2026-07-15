@@ -231,11 +231,12 @@ model-viewer.is-scholar-beast {
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  padding: 2rem 1.5rem;
+  gap: 0.85rem;
+  padding: 1.5rem 1.25rem;
   background: var(--bg-panel);
   box-shadow: var(--shadow);
-  overflow-y: auto;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .panel__header {
@@ -256,6 +257,107 @@ model-viewer.is-scholar-beast {
   margin-top: 0.25rem;
   font-size: 0.85rem;
   color: var(--text-muted);
+}
+
+.panel__score-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.85rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(15, 20, 25, 0.55);
+}
+
+.panel__score-label {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.panel__score-value {
+  font-size: 1.65rem;
+  font-weight: 900;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-log {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(15, 20, 25, 0.45);
+  overflow: hidden;
+}
+
+.activity-log__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.35rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.activity-log__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  margin-bottom: 0.3rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.activity-log__item.is-plus {
+  border-color: rgba(74, 222, 128, 0.28);
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.activity-log__item.is-minus {
+  border-color: rgba(248, 113, 113, 0.3);
+  background: rgba(185, 28, 28, 0.14);
+}
+
+.activity-log__item.is-neutral {
+  border-color: rgba(96, 165, 250, 0.28);
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.activity-log__time {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.activity-log__text {
+  flex: 1;
+  text-align: right;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.activity-log__empty {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.panel__legacy-hidden {
+  display: none !important;
 }
 
 .panel__stats {

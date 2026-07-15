@@ -1069,6 +1069,10 @@ body.tools-sidebar-open .tools-tab {
   margin-bottom: 0.75rem;
 }
 
+.countdown-setup[hidden] {
+  display: none !important;
+}
+
 #timer-interval-modal .app-dialog-modal__card {
   width: min(92vw, 420px);
   padding: 1.75rem 1.65rem 1.55rem;
