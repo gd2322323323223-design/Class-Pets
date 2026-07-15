@@ -3367,6 +3367,43 @@ body.growth-journal-open {
   line-height: 1.2;
 }
 
+.growth-journal-chart__week-divider {
+  flex: 0 0 auto;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 1.35rem;
+  padding: 0.2rem 0 1.35rem;
+  margin: 0 0.1rem;
+}
+
+.growth-journal-chart__week-divider-line {
+  flex: 1;
+  width: 2px;
+  min-height: 2.5rem;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(245, 158, 11, 0.15) 0%,
+    rgba(217, 119, 6, 0.85) 45%,
+    rgba(245, 158, 11, 0.15) 100%
+  );
+  box-shadow: 0 0 8px rgba(251, 191, 36, 0.45);
+}
+
+.growth-journal-chart__week-divider-label {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #92400e;
+  opacity: 0.9;
+}
+
 .growth-journal-chart__legend {
   margin: 0.55rem 0 0;
   font-size: 0.82rem;

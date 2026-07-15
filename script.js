@@ -4,8 +4,8 @@
 
   const db = window.__firebaseDb || null;
 
-  const APP_BUILD_VERSION = "127";
-  const APP_BUILD_UPDATED_AT = "2026-07-15T08:26:10+08:00";
+  const APP_BUILD_VERSION = "128";
+  const APP_BUILD_UPDATED_AT = "2026-07-15T08:36:47+08:00";
   const GROUP_PANEL_POS_STORAGE_KEY = "classroom-group-panel-pos-v1";
   const FAVORITE_LINKS_STORAGE_KEY = "classroom-favorite-links-v1";
   const MISSION_TEMPLATES_STORAGE_KEY = "classroom-mission-templates-v1";
@@ -43,7 +43,7 @@
   const SITE_ACCESS_PASSWORD = "2756";
   const SITE_ACCESS_SESSION_KEY = "classroom-site-access-ok-v1";
   const CLASS_CODE_STORAGE_KEY = "classroom-class-code-v1";
-  const GROWTH_JOURNAL_DAYS = 7;
+  const GROWTH_JOURNAL_WEEKDAYS = 5;
   const ACTIVITY_LOG_DAYS = 30;
   const ACTIVITY_LOG_MAX = 200;
 
@@ -2786,12 +2786,44 @@
     return true;
   }
 
+  function parseLocalDateKey(dateKey) {
+    const parts = String(dateKey || "").split("-");
+    if (parts.length !== 3) return null;
+    const y = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const d = parseInt(parts[2], 10);
+    if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) {
+      return null;
+    }
+    return new Date(y, m - 1, d);
+  }
+
+  function isWeekendDateKey(dateKey) {
+    const d = parseLocalDateKey(dateKey);
+    if (!d) return false;
+    const day = d.getDay();
+    return day === 0 || day === 6;
+  }
+
   function getLastJournalDateKeys() {
     const keys = [];
-    for (let i = GROWTH_JOURNAL_DAYS - 1; i >= 0; i--) {
-      keys.push(getLocalDateKey(-i));
+    let offset = 0;
+    while (keys.length < GROWTH_JOURNAL_WEEKDAYS && offset < 40) {
+      const key = getLocalDateKey(-offset);
+      if (!isWeekendDateKey(key)) {
+        keys.push(key);
+      }
+      offset += 1;
     }
-    return keys;
+    return keys.reverse();
+  }
+
+  function shouldInsertJournalWeekDivider(prevKey, nextKey) {
+    if (!prevKey || !nextKey) return false;
+    const prev = parseLocalDateKey(prevKey);
+    const next = parseLocalDateKey(nextKey);
+    if (!prev || !next) return false;
+    return prev.getDay() === 5 && next.getDay() === 1;
   }
 
   function formatHistoryDelta(delta) {
@@ -2800,15 +2832,9 @@
 
   function formatJournalDayShort(dateKey) {
     const today = getLocalDateKey(0);
-    const yesterday = getLocalDateKey(-1);
     if (dateKey === today) return "今天";
-    if (dateKey === yesterday) return "昨天";
-    const parts = dateKey.split("-");
-    const d = new Date(
-      parseInt(parts[0], 10),
-      parseInt(parts[1], 10) - 1,
-      parseInt(parts[2], 10)
-    );
+    const d = parseLocalDateKey(dateKey);
+    if (!d) return dateKey;
     const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
     return "週" + weekdays[d.getDay()];
   }
@@ -2863,7 +2889,21 @@
     barsWrap.className = "growth-journal-chart__bars";
     barsWrap.setAttribute("aria-hidden", "true");
 
-    keys.forEach(function (dateKey) {
+    keys.forEach(function (dateKey, index) {
+      if (
+        index > 0 &&
+        shouldInsertJournalWeekDivider(keys[index - 1], dateKey)
+      ) {
+        const divider = document.createElement("div");
+        divider.className = "growth-journal-chart__week-divider";
+        divider.setAttribute("aria-hidden", "true");
+        divider.innerHTML =
+          '<span class="growth-journal-chart__week-divider-line"></span>' +
+          '<span class="growth-journal-chart__week-divider-label">新一週</span>' +
+          '<span class="growth-journal-chart__week-divider-line"></span>';
+        barsWrap.appendChild(divider);
+      }
+
       const raw = hist[dateKey];
       const score = typeof raw === "number" ? raw : 0;
       const col = document.createElement("div");
